@@ -1,0 +1,49 @@
+@import "tailwindcss";
+@plugin "daisyui" {
+    themes: all;
+    exclude: rootscrollgutter;
+}
+
+/* 自定义主题配置 */
+@plugin "daisyui/theme" {
+    name: "trackify-theme";
+    default: true;
+    color-scheme: light;
+
+    /* 基础颜色 */
+    --color-base-100: oklch(98% 0.02 240);
+    --color-base-200: oklch(95% 0.03 240);
+    --color-base-300: oklch(92% 0.04 240);
+    --color-base-content: oklch(20% 0.05 240);
+
+    /* 主题颜色 */
+    --color-primary: oklch(55% 0.3 240);
+    --color-primary-content: oklch(98% 0.01 240);
+    --color-secondary: oklch(70% 0.25 200);
+    --color-secondary-content: oklch(98% 0.01 200);
+    --color-accent: oklch(65% 0.25 160);
+    --color-accent-content: oklch(98% 0.01 160);
+
+    /* 功能颜色 */
+    --color-neutral: oklch(50% 0.05 240);
+    --color-neutral-content: oklch(98% 0.01 240);
+    --color-info: oklch(70% 0.2 220);
+    --color-info-content: oklch(98% 0.01 220);
+    --color-success: oklch(65% 0.25 140);
+    --color-success-content: oklch(98% 0.01 140);
+    --color-warning: oklch(80% 0.25 80);
+    --color-warning-content: oklch(20% 0.05 80);
+    --color-error: oklch(65% 0.3 30);
+    --color-error-content: oklch(98% 0.01 30);
+
+    /* 圆角设置 */
+    --radius-selector: 0.5rem;
+    --radius-field: 0.25rem;
+    --radius-box: 0.5rem;
+
+    /* 其他设置 */
+    --size-selector: 0.25rem;
+    --size-field: 0.25rem;
+    --border: 1px;
+    --depth: 1;
+}

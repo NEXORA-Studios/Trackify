@@ -42,10 +42,14 @@
                     </ul>
                 </div>
                 <!-- Logo -->
-                <router-link to="/" class="btn btn-ghost normal-case text-xl text-info font-bold">
+                <router-link to="/" class="flex items-center px-4 normal-case text-xl text-[#39A7B3] font-bold">
                     <img src="/logo.png" alt="logo" width="32" />
                     <span class="translate-y-0.25 ml-2">Trackify</span>
                 </router-link>
+                <span
+                    class="badge badge-warning rounded-sm translate-y-0.25 text-warning-content font-bold text-[16px] px-2">
+                    Demo
+                </span>
             </div>
 
             <!-- 桌面端导航菜单 -->

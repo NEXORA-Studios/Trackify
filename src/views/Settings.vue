@@ -84,6 +84,7 @@
     const saveSettings = async () => {
         // 构建符合ISettings接口的设置对象
         const settings: ISettings = {
+            __version__: 0, // Impl for TypeScript
             user: {
                 username: userSettings.value.name,
                 email: userSettings.value.email,

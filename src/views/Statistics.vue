@@ -228,7 +228,23 @@
 <template>
     <div class="statistics-page">
         <div class="flex justify-between items-center">
-            <h1 class="text-2xl font-bold mb-6 mt-4">统计与分析</h1>
+            <section class="flex gap-8 items-center">
+                <h1 class="text-2xl font-bold mb-6 mt-4">统计与分析</h1>
+                <div role="alert" class="alert alert-warning alert-outline -translate-y-0.5">
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        class="h-6 w-6 shrink-0 stroke-current"
+                        fill="none"
+                        viewBox="0 0 24 24">
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    <span>提示：页面功能仍在制作中，本页面大部分内容不可用或不准确</span>
+                </div>
+            </section>
 
             <!-- 时间范围选择 -->
             <div class="flex">
@@ -360,7 +376,9 @@
                                         class="w-full bg-warning opacity-80 mt-1"
                                         :style="{ height: (day.pending / 8) * 100 + '%' }"></div>
                                 </div>
-                                <div class="text-xs mt-2 w-full text-center truncate" title="{{ day.date }}">{{ day.date }}</div>
+                                <div class="text-xs mt-2 w-full text-center truncate" title="{{ day.date }}">
+                                    {{ day.date }}
+                                </div>
                             </div>
                         </div>
 
@@ -441,22 +459,6 @@
                             </div>
 
                             <!-- 图表区域 -->
-                            <div class="w-full h-full absolute top-0 left-0 backdrop-blur-xs bg-base-300/50 flex items-center px-8">
-                                <div role="alert" class="alert alert-warning alert-outline w-full">
-                                    <svg
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        class="h-6 w-6 shrink-0 stroke-current"
-                                        fill="none"
-                                        viewBox="0 0 24 24">
-                                        <path
-                                            stroke-linecap="round"
-                                            stroke-linejoin="round"
-                                            stroke-width="2"
-                                            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                                    </svg>
-                                    <span>提示：专注时间统计暂不可用</span>
-                                </div>
-                            </div>
                             <div class="w-full h-full pl-8 flex">
                                 <div
                                     v-for="(day, index) in focusTimeData"
@@ -466,7 +468,9 @@
                                         class="w-4 bg-primary rounded-t-sm"
                                         :style="{ height: Math.max((day.minutes / 180) * 100, 1) + '%' }"></div>
                                     <!-- 确保即使专注时间很少也能显示一点高度 -->
-                                    <div class="text-xs mt-2 w-full text-center truncate" title="{{ day.date }}">{{ day.date }}</div>
+                                    <div class="text-xs mt-2 w-full text-center truncate" title="{{ day.date }}">
+                                        {{ day.date }}
+                                    </div>
                                 </div>
                             </div>
                         </div>

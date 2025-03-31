@@ -56,7 +56,8 @@
                 priority: task.priority,
                 deadline: task.deadline,
                 tags: task.tags,
-                completed: task.subtasks.length > 0 ? task.subtasks.every((st) => st.completed) : false,
+                completed:
+                    task.completed ?? task.subtasks.length > 0 ? task.subtasks.every((st) => st.completed) : false,
                 subtasks: task.subtasks.map((st, stIndex) => ({
                     id: stIndex + 1, // 确保每个子任务有唯一ID
                     title: st.title,
@@ -299,6 +300,20 @@
             },
         };
     };
+
+    // 清理已完成任务
+    const clearCompletedTasks = async () => {
+        if (!tasks.value) return;
+
+        // 过滤掉已完成的任务
+        const updatedTasks = tasks.value.filter((task) => !task.completed);
+
+        // 更新本地状态
+        tasks.value = updatedTasks;
+
+        // 保存到TaskStore
+        await taskStore.saveTasks(updatedTasks);
+    };
 </script>
 
 <template>
@@ -397,7 +412,10 @@
                 </div>
 
                 <!-- 添加任务按钮 -->
-                <button @click="showNewTaskForm = true" class="btn btn-primary w-full mb-6">添加新任务</button>
+                <button @click="showNewTaskForm = true" class="btn btn-info w-full mb-2">添加新任务</button>
+                <button @click="clearCompletedTasks" class="btn btn-success btn-outline w-full mb-6">
+                    清理已完成任务
+                </button>
             </div>
 
             <!-- 中间：任务列表 -->
@@ -451,12 +469,14 @@
                                         </td>
                                         <td>
                                             {{
-                                                new Date(task.deadline).toLocaleString("zh-CN", {
-                                                    month: "short",
-                                                    day: "numeric",
-                                                    hour: "2-digit",
-                                                    minute: "2-digit",
-                                                })
+                                                task.deadline
+                                                    ? new Date(task.deadline).toLocaleString("zh-CN", {
+                                                          month: "short",
+                                                          day: "numeric",
+                                                          hour: "2-digit",
+                                                          minute: "2-digit",
+                                                      })
+                                                    : "未设置"
                                             }}
                                         </td>
                                         <td>
@@ -511,7 +531,9 @@
 
                     <div class="py-4">
                         <p class="text-sm opacity-70 mb-1">截止时间</p>
-                        <p>{{ new Date(selectedTask.deadline).toLocaleString() }}</p>
+                        <p>
+                            {{ selectedTask.deadline ? new Date(selectedTask.deadline).toLocaleString() : "未设置" }}
+                        </p>
 
                         <p class="text-sm opacity-70 mt-4 mb-1">描述</p>
                         <p>{{ selectedTask.description }}</p>

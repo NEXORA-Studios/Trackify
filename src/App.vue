@@ -42,8 +42,9 @@
                     </ul>
                 </div>
                 <!-- Logo -->
-                <router-link to="/" class="btn btn-ghost normal-case text-xl text-primary font-bold">
-                    Trackify
+                <router-link to="/" class="btn btn-ghost normal-case text-xl text-info font-bold">
+                    <img src="/logo.png" alt="logo" width="32" />
+                    <span class="translate-y-0.25 ml-2">Trackify</span>
                 </router-link>
             </div>
 
@@ -64,7 +65,6 @@
                     <label tabindex="0" class="btn btn-ghost btn-circle avatar">
                         <div
                             class="w-10 rounded-full bg-primary text-primary-content flex! items-center justify-center">
-                            <!-- <span class="text-lg font-bold">用</span> -->
                             <img src="/avatar.png" alt="avatar" />
                         </div>
                     </label>

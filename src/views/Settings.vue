@@ -1,5 +1,11 @@
 <script setup lang="ts">
-    import { ref } from "vue";
+    import { ref, onBeforeMount } from "vue";
+    import { SettingStore } from "../mods/Store";
+    import { ITheme, type ISettings } from "../mods/Interface";
+
+    // 获取SettingStore实例
+    const settingStore = SettingStore.getInstance();
+    const saveButton = ref<HTMLButtonElement>();
 
     // 用户设置
     const userSettings = ref({
@@ -28,12 +34,12 @@
     });
 
     // 集成设置
-    const integrationSettings = ref({
-        googleCalendar: false,
-        outlook: false,
-        trello: false,
-        github: false,
-    });
+    // const integrationSettings = ref({
+    //     googleCalendar: false,
+    //     outlook: false,
+    //     trello: false,
+    //     github: false,
+    // });
 
     // 可用主题
     const availableThemes = [
@@ -50,42 +56,111 @@
 
     // 可用语言
     const availableLanguages = [
-        { id: "zh-CN", name: "简体中文" },
-        { id: "en-US", name: "English" },
-        { id: "ja-JP", name: "日本語" },
-        { id: "ko-KR", name: "한국어" },
+        { id: "zh-CN", name: "简体中文（尚不支持其他语言）" },
+        // { id: "en-US", name: "English" },
+        // { id: "ja-JP", name: "日本語" },
+        // { id: "ko-KR", name: "한국어" },
     ];
 
     // 可用字体大小
-    const availableFontSizes = [
-        { id: "small", name: "小" },
-        { id: "medium", name: "中" },
-        { id: "large", name: "大" },
-    ];
+    // const availableFontSizes = [
+    //     { id: "small", name: "小" },
+    //     { id: "medium", name: "中" },
+    //     { id: "large", name: "大" },
+    // ];
 
     // 可用强调色
-    const availableAccentColors = [
-        { id: "primary", name: "主色调", class: "bg-primary" },
-        { id: "secondary", name: "次要色调", class: "bg-secondary" },
-        { id: "accent", name: "强调色", class: "bg-accent" },
-        { id: "info", name: "信息色", class: "bg-info" },
-        { id: "success", name: "成功色", class: "bg-success" },
-        { id: "warning", name: "警告色", class: "bg-warning" },
-        { id: "error", name: "错误色", class: "bg-error" },
-    ];
+    // const availableAccentColors = [
+    //     { id: "primary", name: "主色调", class: "bg-primary" },
+    //     { id: "secondary", name: "次要色调", class: "bg-secondary" },
+    //     { id: "accent", name: "强调色", class: "bg-accent" },
+    //     { id: "info", name: "信息色", class: "bg-info" },
+    //     { id: "success", name: "成功色", class: "bg-success" },
+    //     { id: "warning", name: "警告色", class: "bg-warning" },
+    //     { id: "error", name: "错误色", class: "bg-error" },
+    // ];
 
     // 保存设置
-    const saveSettings = () => {
-        // 在实际应用中，这里会将设置保存到本地存储或发送到服务器
-        alert("设置已保存");
+    const saveSettings = async () => {
+        // 构建符合ISettings接口的设置对象
+        const settings: ISettings = {
+            user: {
+                username: userSettings.value.name,
+                email: userSettings.value.email,
+                avatar: userSettings.value.avatar,
+                language: userSettings.value.language === "zh-CN" ? "zh_cn" : "zh_cn", // 默认使用zh_cn
+            },
+            notifications: {
+                task: notificationSettings.value.taskReminders,
+                deadline: notificationSettings.value.deadlineAlerts,
+                daily_outline: notificationSettings.value.dailyDigest,
+                voice: notificationSettings.value.soundEnabled,
+                time_notify: notificationSettings.value.reminderTime as 5 | 10 | 15 | 30 | 60 | 120 | 1440,
+            },
+            theme: {
+                value: themeSettings.value.currentTheme as ITheme,
+            },
+        };
+
+        // 保存到SettingStore
+        await settingStore.saveSettings(settings);
+        if (!saveButton.value) return;
+        saveButton.value.classList.remove("btn-info");
+        saveButton.value.classList.add("btn-success");
+        saveButton.value.innerText = "✓";
+        setTimeout(() => {
+            if (!saveButton.value) return;
+            saveButton.value.classList.remove("btn-success");
+            saveButton.value.classList.add("btn-info");
+            saveButton.value.innerText = "保存设置";
+        }, 500);
     };
 
     // 更改主题
-    const changeTheme = (themeId: string) => {
+    const changeTheme = async (themeId: string) => {
         themeSettings.value.currentTheme = themeId;
-        // 在实际应用中，这里会应用主题变更
+        // 应用主题变更
         document.documentElement.setAttribute("data-theme", themeId);
+
+        // 保存主题设置到SettingStore
+        await settingStore.updateSettings({
+            theme: {
+                value: themeId as ITheme,
+            },
+        });
     };
+
+    // 在组件挂载时初始化SettingStore并加载设置
+    onBeforeMount(async () => {
+        await settingStore.init();
+        const storedSettings = await settingStore.getSettings();
+
+        if (storedSettings) {
+            // 更新用户设置
+            userSettings.value = {
+                name: storedSettings.user.username,
+                email: storedSettings.user.email,
+                avatar: storedSettings.user.avatar || "/avatar.png",
+                theme: storedSettings.theme.value,
+                language: storedSettings.user.language === "zh_cn" ? "zh-CN" : "zh-CN", // 转换为组件使用的格式
+            };
+
+            // 更新通知设置
+            notificationSettings.value = {
+                taskReminders: storedSettings.notifications.task,
+                deadlineAlerts: storedSettings.notifications.deadline,
+                dailyDigest: storedSettings.notifications.daily_outline,
+                soundEnabled: storedSettings.notifications.voice,
+                reminderTime: storedSettings.notifications.time_notify,
+            };
+
+            // 更新主题设置
+            themeSettings.value.currentTheme = storedSettings.theme.value;
+
+            // 应用主题
+            document.documentElement.setAttribute("data-theme", storedSettings.theme.value);
+        }
+    });
 
     // 上传头像
     const uploadAvatar = (event: any) => {
@@ -175,7 +250,10 @@
                                     <label class="label mb-2">
                                         <span class="label-text">语言</span>
                                     </label>
-                                    <select v-model="userSettings.language" class="select select-bordered w-full">
+                                    <select
+                                        v-model="userSettings.language"
+                                        class="select select-bordered w-full"
+                                        disabled>
                                         <option v-for="lang in availableLanguages" :key="lang.id" :value="lang.id">
                                             {{ lang.name }}
                                         </option>
@@ -217,7 +295,7 @@
                             </label>
                         </div>
 
-                        <div class="form-control mt-2">
+                        <!-- <div class="form-control mt-2">
                             <label class="label cursor-pointer justify-start gap-4">
                                 <input
                                     type="checkbox"
@@ -228,7 +306,7 @@
                                     <p class="text-xs opacity-60">每天发送当日任务摘要</p>
                                 </span>
                             </label>
-                        </div>
+                        </div> -->
 
                         <div class="form-control mt-2">
                             <label class="label cursor-pointer justify-start gap-4">
@@ -283,7 +361,7 @@
                         </div>
 
                         <!-- 强调色选择 -->
-                        <div class="form-control w-full mt-4">
+                        <!-- <div class="form-control w-full mt-4">
                             <label class="label">
                                 <span class="label-text">强调色</span>
                             </label>
@@ -301,10 +379,10 @@
                                     ]"
                                     @click="themeSettings.accentColor = color.id"></div>
                             </div>
-                        </div>
+                        </div> -->
 
                         <!-- 字体大小 -->
-                        <div class="form-control w-full mt-4">
+                        <!-- <div class="form-control w-full mt-4">
                             <label class="label">
                                 <span class="label-text mr-2">字体大小</span>
                             </label>
@@ -313,10 +391,10 @@
                                     {{ size.name }}
                                 </option>
                             </select>
-                        </div>
+                        </div> -->
 
                         <!-- 紧凑模式 -->
-                        <div class="form-control mt-4">
+                        <!-- <div class="form-control mt-4">
                             <label class="label cursor-pointer justify-start gap-4">
                                 <input
                                     type="checkbox"
@@ -327,7 +405,7 @@
                                     <p class="text-xs opacity-60">减少界面间距，显示更多内容</p>
                                 </span>
                             </label>
-                        </div>
+                        </div> -->
                     </div>
                 </div>
 
@@ -336,7 +414,21 @@
                     <div class="card-body">
                         <h2 class="card-title">集成与同步设置</h2>
 
-                        <div class="form-control">
+                        <div role="alert" class="alert alert-warning alert-outline flex">
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                class="h-6 w-6 shrink-0 stroke-current"
+                                fill="none"
+                                viewBox="0 0 24 24">
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                            </svg>
+                            <span class="mb-0.5">提示：集成与同步尚未支持</span>
+                        </div>
+                        <!-- <div class="form-control">
                             <label class="label cursor-pointer justify-start gap-4">
                                 <input
                                     type="checkbox"
@@ -386,13 +478,13 @@
                                     <p class="text-xs opacity-60">与GitHub Issues同步任务</p>
                                 </span>
                             </label>
-                        </div>
+                        </div> -->
                     </div>
                 </div>
 
                 <!-- 保存按钮 -->
                 <div class="flex justify-end mb-6">
-                    <button class="btn btn-primary" @click="saveSettings">保存设置</button>
+                    <button ref="saveButton" class="btn btn-info" @click="saveSettings">保存设置</button>
                 </div>
             </div>
         </div>

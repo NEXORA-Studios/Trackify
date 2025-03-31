@@ -33,4 +33,12 @@ const router = createRouter({
     routes,
 });
 
+router.beforeEach((_to, _from, next) => {
+    document.getElementById("main-container")?.classList.add("fade-out");
+    setTimeout(() => {
+        document.getElementById("main-container")?.classList.remove("fade-out");
+        next();
+    }, 300);
+});
+
 export default router;

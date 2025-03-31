@@ -47,3 +47,12 @@
     --border: 1px;
     --depth: 1;
 }
+
+main#main-container {
+    opacity: 1;
+    transition: all 0.3s ease-in-out;
+}
+
+main#main-container.fade-out {
+    opacity: 0;
+}

@@ -1,12 +1,60 @@
 <script setup lang="ts">
-    import { ref } from "vue";
+    import { ref, onMounted } from "vue";
+    import { TaskStore } from "../mods/Store";
+
+    // 获取任务存储实例
+    const taskStore = TaskStore.getInstance();
 
     // 今日任务列表
-    const todayTasks = ref([
-        { id: 1, name: "完成Trackify项目设计", priority: "high", deadline: "14:00", progress: 30, completed: false },
-        { id: 2, name: "团队会议", priority: "medium", deadline: "16:00", progress: 0, completed: false },
-        { id: 3, name: "回复邮件", priority: "low", deadline: "18:00", progress: 0, completed: false },
-    ]);
+    const todayTasks = ref<any[]>([]);
+
+    // 从TaskStore加载任务
+    const loadTasks = async () => {
+        const allTasks = await taskStore.getTasks();
+
+        // 转换任务格式并筛选今日任务
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        todayTasks.value = allTasks
+            .filter((task) => {
+                // 筛选今日任务（截止日期是今天或已经逾期的未完成任务）
+                if (task.completed) return false;
+
+                const deadlineDate = new Date(task.deadline);
+                deadlineDate.setHours(0, 0, 0, 0);
+
+                return deadlineDate <= today;
+            })
+            .map((task) => {
+                // 计算进度（基于已完成的子任务）
+                const totalSubtasks = task.subtasks.length;
+                const completedSubtasks = task.subtasks.filter((st) => st.completed).length;
+                const progress = totalSubtasks > 0 ? Math.round((completedSubtasks / totalSubtasks) * 100) : 0;
+
+                // 提取截止时间
+                const deadlineDate = new Date(task.deadline);
+                const hours = deadlineDate.getHours().toString().padStart(2, "0");
+                const minutes = deadlineDate.getMinutes().toString().padStart(2, "0");
+                const deadlineTime = `${hours}:${minutes}`;
+
+                return {
+                    id: task.id,
+                    name: task.title,
+                    priority: task.priority === 2 ? "high" : task.priority === 1 ? "medium" : "low",
+                    deadline: deadlineTime,
+                    progress,
+                    completed: task.completed,
+                    originalTask: task, // 保存原始任务对象以便更新
+                };
+            });
+    };
+
+    // 组件挂载时加载任务
+    onMounted(async () => {
+        await taskStore.init();
+        await loadTasks();
+    });
 
     // 专注模式相关
     const focusMinutes = ref(25);
@@ -14,13 +62,6 @@
     const isFocusing = ref(false);
     const focusInterval = ref(null as any);
     const currentTask = ref(null as any);
-
-    // 新任务表单
-    const newTask = ref({
-        name: "",
-        priority: "medium",
-        deadline: "",
-    });
 
     // 开始专注
     const startFocus = (task: any = null) => {
@@ -62,27 +103,6 @@
 
         clearInterval(focusInterval.value);
         isFocusing.value = false;
-    };
-
-    // 添加新任务
-    const addTask = () => {
-        if (!newTask.value.name.trim()) return;
-
-        const id = todayTasks.value.length > 0 ? Math.max(...todayTasks.value.map((t) => t.id)) + 1 : 1;
-
-        todayTasks.value.push({
-            id,
-            name: newTask.value.name,
-            priority: newTask.value.priority,
-            deadline: newTask.value.deadline || "今天",
-            progress: 0,
-            completed: false,
-        });
-
-        // 重置表单
-        newTask.value.name = "";
-        newTask.value.priority = "medium";
-        newTask.value.deadline = "";
     };
 
     // 切换任务完成状态
@@ -203,50 +223,6 @@
                         <div class="flex gap-2">
                             <button class="btn btn-primary" @click="startFocus()" v-if="!isFocusing">开始专注</button>
                             <button class="btn btn-error" @click="pauseFocus()" v-else>暂停</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 快速添加任务 -->
-            <div class="card bg-base-200 shadow-xl md:col-span-3">
-                <div class="card-body">
-                    <h2 class="card-title">快速添加任务</h2>
-
-                    <div class="form-control w-full">
-                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                            <div class="md:col-span-2">
-                                <label class="label mb-2">
-                                    <span class="label-text">任务名称</span>
-                                </label>
-                                <input
-                                    v-model="newTask.name"
-                                    type="text"
-                                    placeholder="输入任务名称"
-                                    class="input input-bordered w-full" />
-                            </div>
-
-                            <div>
-                                <label class="label mb-2">
-                                    <span class="label-text">优先级</span>
-                                </label>
-                                <select v-model="newTask.priority" class="select select-bordered w-full">
-                                    <option value="high">高</option>
-                                    <option value="medium">中</option>
-                                    <option value="low">低</option>
-                                </select>
-                            </div>
-
-                            <div>
-                                <label class="label mb-2">
-                                    <span class="label-text">截止时间</span>
-                                </label>
-                                <input v-model="newTask.deadline" type="time" class="input input-bordered w-full" />
-                            </div>
-                        </div>
-
-                        <div class="mt-4 flex justify-end">
-                            <button class="btn btn-primary" @click="addTask">添加任务</button>
                         </div>
                     </div>
                 </div>

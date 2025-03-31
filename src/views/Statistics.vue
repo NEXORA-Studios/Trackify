@@ -1,44 +1,30 @@
 <script setup lang="ts">
-    import { ref, computed } from "vue";
+    // TODO: 此页面被暂时禁用 - Impl 不完整
 
-    // 模拟数据 - 任务完成情况
+    import { ref, computed, onMounted } from "vue";
+    import { TaskStore, FocusStore } from "../mods/Store";
+
+    // 获取任务存储实例
+    const taskStore = TaskStore.getInstance();
+    // 获取专注时间存储实例
+    const focusStore = FocusStore.getInstance();
+
+    // 任务统计数据
     const taskStats = ref({
-        completed: 15,
-        pending: 8,
-        overdue: 3,
-        total: 26,
+        completed: 0,
+        pending: 0,
+        overdue: 0,
+        total: 0,
     });
 
-    // 模拟数据 - 每日完成任务数量（最近7天）
-    const dailyCompletionData = ref([
-        { date: "6月10日", completed: 3, pending: 2 },
-        { date: "6月11日", completed: 5, pending: 1 },
-        { date: "6月12日", completed: 2, pending: 4 },
-        { date: "6月13日", completed: 4, pending: 2 },
-        { date: "6月14日", completed: 6, pending: 1 },
-        { date: "6月15日", completed: 3, pending: 3 },
-        { date: "6月16日", completed: 4, pending: 2 },
-    ]);
+    // 每日完成任务数量
+    const dailyCompletionData = ref<{ date: string; completed: number; pending: number }[]>([]);
 
-    // 模拟数据 - 时间使用分析（按类别）
-    const timeUsageData = ref([
-        { category: "工作", hours: 28, color: "hsl(215, 70%, 60%)" },
-        { category: "学习", hours: 12, color: "hsl(145, 70%, 60%)" },
-        { category: "会议", hours: 8, color: "hsl(45, 70%, 60%)" },
-        { category: "个人", hours: 6, color: "hsl(325, 70%, 60%)" },
-        { category: "其他", hours: 4, color: "hsl(275, 70%, 60%)" },
-    ]);
+    // 时间使用分析（按任务标签分类）
+    const timeUsageData = ref<{ category: string; hours: number; color: string }[]>([]);
 
-    // 模拟数据 - 专注时间记录（最近7天）
-    const focusTimeData = ref([
-        { date: "6月10日", minutes: 95 },
-        { date: "6月11日", minutes: 120 },
-        { date: "6月12日", minutes: 75 },
-        { date: "6月13日", minutes: 150 },
-        { date: "6月14日", minutes: 180 },
-        { date: "6月15日", minutes: 135 },
-        { date: "6月16日", minutes: 105 },
-    ]);
+    // 专注时间记录
+    const focusTimeData = ref<{ date: string; minutes: number }[]>([]);
 
     // 计算总专注时间
     const totalFocusTime = computed(() => {
@@ -50,6 +36,7 @@
 
     // 计算平均每日专注时间
     const averageFocusTime = computed(() => {
+        if (focusTimeData.value.length === 0) return "0小时0分钟";
         const total = focusTimeData.value.reduce((sum, day) => sum + day.minutes, 0);
         const average = Math.round(total / focusTimeData.value.length);
         const hours = Math.floor(average / 60);
@@ -59,44 +46,212 @@
 
     // 计算任务完成率
     const taskCompletionRate = computed(() => {
+        if (taskStats.value.total === 0) return 0;
         return Math.round((taskStats.value.completed / taskStats.value.total) * 100);
     });
 
     // 时间段选择
     const timeRange = ref("week");
 
-    // 切换时间范围
-    const changeTimeRange = (range: string) => {
-        timeRange.value = range;
-        // 在实际应用中，这里会根据选择的时间范围重新获取数据
+    // 获取日期范围
+    const getDateRange = (range: string) => {
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        let startDate: Date;
+
+        switch (range) {
+            case "week":
+                // 本周开始（周一）
+                const dayOfWeek = today.getDay() || 7; // 将周日的0转换为7
+                startDate = new Date(today);
+                startDate.setDate(today.getDate() - dayOfWeek + 1);
+                break;
+            case "month":
+                // 本月开始
+                startDate = new Date(today.getFullYear(), today.getMonth(), 1);
+                break;
+            case "year":
+                // 本年开始
+                startDate = new Date(today.getFullYear(), 0, 1);
+                break;
+            default:
+                startDate = new Date(today);
+                startDate.setDate(today.getDate() - 6); // 默认显示最近7天
+        }
+
+        return { startDate, endDate: today };
     };
+
+    // 格式化日期为显示格式
+    const formatDate = (date: Date): string => {
+        return `${date.getMonth() + 1}月${date.getDate()}日`;
+    };
+
+    // 加载任务数据并计算统计信息
+    const loadStatistics = async () => {
+        await taskStore.init();
+        const allTasks = await taskStore.getTasks();
+
+        // 获取当前选择的日期范围
+        const { startDate, endDate } = getDateRange(timeRange.value);
+
+        // 重置统计数据
+        taskStats.value = {
+            completed: 0,
+            pending: 0,
+            overdue: 0,
+            total: 0,
+        };
+
+        // 筛选日期范围内的任务
+        const tasksInRange = allTasks.filter((task) => {
+            const taskDate = new Date(task.deadline);
+            return taskDate >= startDate && taskDate <= endDate;
+        });
+
+        // 计算任务统计数据
+        taskStats.value.total = tasksInRange.length;
+        taskStats.value.completed = tasksInRange.filter((task) => task.completed).length;
+        taskStats.value.pending = tasksInRange.filter(
+            (task) => !task.completed && new Date(task.deadline) >= new Date()
+        ).length;
+        taskStats.value.overdue = tasksInRange.filter(
+            (task) => !task.completed && new Date(task.deadline) < new Date()
+        ).length;
+
+        // 生成日期范围内的所有日期
+        const dateRange: Date[] = [];
+        const currentDate = new Date(startDate);
+        while (currentDate <= endDate) {
+            dateRange.push(new Date(currentDate));
+            currentDate.setDate(currentDate.getDate() + 1);
+        }
+
+        // 计算每日任务完成情况
+        dailyCompletionData.value = dateRange.map((date) => {
+            const dayStart = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+            const dayEnd = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59);
+
+            const dayTasks = allTasks.filter((task) => {
+                const taskDate = new Date(task.deadline);
+                return taskDate >= dayStart && taskDate <= dayEnd;
+            });
+
+            return {
+                date: formatDate(date),
+                completed: dayTasks.filter((task) => task.completed).length,
+                pending: dayTasks.filter((task) => !task.completed).length,
+            };
+        });
+
+        // 按标签统计任务时间使用情况（模拟数据，实际应用中可能需要更复杂的逻辑）
+        // 收集所有任务标签
+        const allTags = new Set<string>();
+        tasksInRange.forEach((task) => {
+            task.tags.forEach((tag) => allTags.add(tag));
+        });
+
+        // 如果没有标签，添加一个默认标签
+        if (allTags.size === 0) {
+            allTags.add("未分类");
+        }
+
+        // 为每个标签分配颜色和时间
+        const colors = [
+            "hsl(215, 70%, 60%)",
+            "hsl(145, 70%, 60%)",
+            "hsl(45, 70%, 60%)",
+            "hsl(325, 70%, 60%)",
+            "hsl(275, 70%, 60%)",
+            "hsl(185, 70%, 60%)",
+            "hsl(95, 70%, 60%)",
+        ];
+
+        timeUsageData.value = Array.from(allTags).map((tag, index) => {
+            // 计算该标签下的任务数量
+            const tagTasks = tasksInRange.filter((task) => task.tags.includes(tag));
+            // 模拟每个任务的平均时间（实际应用中应该有真实数据）
+            const avgHoursPerTask = 2;
+            const hours = tagTasks.length * avgHoursPerTask;
+
+            return {
+                category: tag,
+                hours: hours || 0, // 如果没有任务，则显示0小时
+                color: colors[index % colors.length],
+            };
+        });
+
+        // 获取真实的专注时间数据
+        await focusStore.init();
+        const startDateStr = startDate.toISOString().split("T")[0]; // 格式为YYYY-MM-DD
+        const endDateStr = endDate.toISOString().split("T")[0];
+        const focusData = await focusStore.getFocusTimeByDateRange(startDateStr, endDateStr);
+
+        console.log("专注时间数据:", focusData); // 调试输出
+        console.log("日期范围:", startDateStr, endDateStr); // 调试输出
+
+        // 将获取的专注时间数据转换为图表所需格式
+        focusTimeData.value = dateRange.map((date) => {
+            const dateStr = date.toISOString().split("T")[0];
+            // 确保从focusData中正确获取专注时间数据
+            const minutes = focusData[dateStr] || 0;
+            console.log("处理日期:", dateStr, "分钟:", minutes, "原始数据中是否存在:", dateStr in focusData); // 增强调试输出
+
+            return {
+                date: formatDate(date),
+                minutes: minutes,
+            };
+        });
+
+        // 确保数据已正确加载
+        if (focusTimeData.value.every((item) => item.minutes === 0)) {
+            console.log("警告: 所有专注时间数据为0，可能数据未正确加载");
+            console.log("原始数据键值:", Object.keys(focusData));
+        }
+
+        console.log("处理后的专注时间数据:", focusTimeData.value); // 调试输出
+    };
+
+    // 切换时间范围并重新加载数据
+    const changeTimeRange = async (range: string) => {
+        timeRange.value = range;
+        await loadStatistics();
+    };
+
+    // 组件挂载时加载统计数据
+    onMounted(async () => {
+        // await focusStore.init();
+        await loadStatistics();
+    });
 </script>
 
 <template>
     <div class="statistics-page">
-        <h1 class="text-2xl font-bold mb-6 mt-4">统计与分析</h1>
+        <div class="flex justify-between items-center">
+            <h1 class="text-2xl font-bold mb-6 mt-4">统计与分析</h1>
 
-        <!-- 时间范围选择 -->
-        <div class="flex justify-end mb-6">
-            <div class="btn-group">
-                <button
-                    class="btn btn-sm"
-                    :class="{ 'btn-active': timeRange === 'week' }"
-                    @click="changeTimeRange('week')">
-                    本周
-                </button>
-                <button
-                    class="btn btn-sm"
-                    :class="{ 'btn-active': timeRange === 'month' }"
-                    @click="changeTimeRange('month')">
-                    本月
-                </button>
-                <button
-                    class="btn btn-sm"
-                    :class="{ 'btn-active': timeRange === 'year' }"
-                    @click="changeTimeRange('year')">
-                    本年
-                </button>
+            <!-- 时间范围选择 -->
+            <div class="flex">
+                <div class="btn-group">
+                    <button
+                        class="btn btn-sm"
+                        :class="{ 'btn-active': timeRange === 'week' }"
+                        @click="changeTimeRange('week')">
+                        本周
+                    </button>
+                    <button
+                        class="btn btn-sm"
+                        :class="{ 'btn-active': timeRange === 'month' }"
+                        @click="changeTimeRange('month')">
+                        本月
+                    </button>
+                    <button
+                        class="btn btn-sm"
+                        :class="{ 'btn-active': timeRange === 'year' }"
+                        @click="changeTimeRange('year')">
+                        本年
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -205,7 +360,7 @@
                                         class="w-full bg-warning opacity-80 mt-1"
                                         :style="{ height: (day.pending / 8) * 100 + '%' }"></div>
                                 </div>
-                                <div class="text-xs mt-2">{{ day.date }}</div>
+                                <div class="text-xs mt-2 w-full text-center truncate" title="{{ day.date }}">{{ day.date }}</div>
                             </div>
                         </div>
 
@@ -274,7 +429,7 @@
                     </h2>
 
                     <!-- 这里在实际应用中会使用图表库如Chart.js或ECharts -->
-                    <div class="h-64 flex flex-col">
+                    <div class="h-64 flex flex-col justify-center">
                         <!-- 模拟折线图 -->
                         <div class="flex items-end h-48 gap-2 mt-4 relative">
                             <!-- Y轴刻度 -->
@@ -286,6 +441,22 @@
                             </div>
 
                             <!-- 图表区域 -->
+                            <div class="w-full h-full absolute top-0 left-0 backdrop-blur-xs bg-base-300/50 flex items-center px-8">
+                                <div role="alert" class="alert alert-warning alert-outline w-full">
+                                    <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        class="h-6 w-6 shrink-0 stroke-current"
+                                        fill="none"
+                                        viewBox="0 0 24 24">
+                                        <path
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            stroke-width="2"
+                                            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                    </svg>
+                                    <span>提示：专注时间统计暂不可用</span>
+                                </div>
+                            </div>
                             <div class="w-full h-full pl-8 flex">
                                 <div
                                     v-for="(day, index) in focusTimeData"
@@ -293,8 +464,9 @@
                                     class="flex-1 flex flex-col items-center justify-end">
                                     <div
                                         class="w-4 bg-primary rounded-t-sm"
-                                        :style="{ height: (day.minutes / 180) * 100 + '%' }"></div>
-                                    <div class="text-xs mt-2">{{ day.date }}</div>
+                                        :style="{ height: Math.max((day.minutes / 180) * 100, 1) + '%' }"></div>
+                                    <!-- 确保即使专注时间很少也能显示一点高度 -->
+                                    <div class="text-xs mt-2 w-full text-center truncate" title="{{ day.date }}">{{ day.date }}</div>
                                 </div>
                             </div>
                         </div>

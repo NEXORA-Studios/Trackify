@@ -1,63 +1,13 @@
 <script setup lang="ts">
-    import { ref, computed } from "vue";
+    import { ref, computed, onMounted } from "vue";
+    import { TaskStore } from "../mods/Store";
+    import { type ITaskItem, type ITaskList } from "../mods/Interface";
+
+    // 获取TaskStore实例
+    const taskStore = TaskStore.getInstance();
 
     // 任务列表数据
-    const tasks = ref([
-        {
-            id: 1,
-            name: "完成Trackify项目设计",
-            description: "设计并实现Trackify应用的界面和功能",
-            priority: "high",
-            deadline: "2023-06-15 14:00",
-            tags: ["工作", "开发"],
-            completed: false,
-            subtasks: [
-                { id: 101, name: "设计界面", completed: true },
-                { id: 102, name: "实现仪表盘", completed: false },
-                { id: 103, name: "实现任务管理", completed: false },
-            ],
-        },
-        {
-            id: 2,
-            name: "团队会议",
-            description: "与团队讨论项目进度和问题",
-            priority: "medium",
-            deadline: "2023-06-15 16:00",
-            tags: ["会议", "团队"],
-            completed: false,
-            subtasks: [],
-        },
-        {
-            id: 3,
-            name: "回复邮件",
-            description: "回复客户关于项目需求的邮件",
-            priority: "low",
-            deadline: "2023-06-15 18:00",
-            tags: ["沟通"],
-            completed: false,
-            subtasks: [],
-        },
-        {
-            id: 4,
-            name: "健身",
-            description: "进行30分钟的有氧运动",
-            priority: "medium",
-            deadline: "2023-06-16 19:00",
-            tags: ["个人", "健康"],
-            completed: false,
-            subtasks: [],
-        },
-        {
-            id: 5,
-            name: "阅读",
-            description: "阅读《高效能人士的七个习惯》",
-            priority: "low",
-            deadline: "2023-06-17 22:00",
-            tags: ["个人", "学习"],
-            completed: false,
-            subtasks: [],
-        },
-    ]);
+    const tasks = ref<ITaskList>();
 
     // 筛选条件
     const filters = ref({
@@ -76,12 +26,12 @@
 
     // 新任务表单
     const newTask = ref({
-        name: "",
+        title: "",
         description: "",
-        priority: "medium",
+        priority: 1,
         deadline: "",
         tags: [] as string[],
-        subtasks: [] as { id: number; name: string; completed: boolean }[],
+        subtasks: [] as { id: number; title: string; completed: boolean }[],
     });
 
     // 新标签输入
@@ -93,10 +43,40 @@
     // 是否显示新建任务表单
     const showNewTaskForm = ref(false);
 
+    const loadHook = async () => {
+        await taskStore.init();
+        const storedTasks = await taskStore.getTasks();
+
+        if (storedTasks && storedTasks.length > 0) {
+            // 将存储的任务转换为视图所需的格式
+            const viewTasks = storedTasks.map((task, index) => ({
+                id: index + 1, // 确保每个任务有唯一ID
+                title: task.title,
+                description: task.description,
+                priority: task.priority,
+                deadline: task.deadline,
+                tags: task.tags,
+                completed: task.subtasks.length > 0 ? task.subtasks.every((st) => st.completed) : false,
+                subtasks: task.subtasks.map((st, stIndex) => ({
+                    id: stIndex + 1, // 确保每个子任务有唯一ID
+                    title: st.title,
+                    completed: st.completed,
+                })),
+            }));
+
+            tasks.value = viewTasks;
+        } else {
+            // 初始化为空数组而不是undefined
+            tasks.value = [];
+        }
+    };
+    // 在组件挂载时初始化TaskStore并加载任务
+    onMounted(loadHook);
+
     // 所有标签列表（用于筛选）
     const allTags = computed(() => {
         const tagSet = new Set<string>();
-        tasks.value.forEach((task) => {
+        tasks.value?.forEach((task) => {
             task.tags.forEach((tag) => tagSet.add(tag));
         });
         return Array.from(tagSet);
@@ -104,18 +84,18 @@
 
     // 筛选后的任务列表
     const filteredTasks = computed(() => {
-        return tasks.value.filter((task) => {
+        return tasks.value?.filter((task) => {
             // 搜索筛选
             if (
                 filters.value.search &&
-                !task.name.toLowerCase().includes(filters.value.search.toLowerCase()) &&
+                !task.title.toLowerCase().includes(filters.value.search.toLowerCase()) &&
                 !task.description.toLowerCase().includes(filters.value.search.toLowerCase())
             ) {
                 return false;
             }
 
             // 优先级筛选
-            if (filters.value.priority !== "all" && task.priority !== filters.value.priority) {
+            if (filters.value.priority !== "all" && String(task.priority) !== filters.value.priority) {
                 return false;
             }
 
@@ -158,27 +138,43 @@
     };
 
     // 添加新任务
-    const addTask = () => {
-        if (!newTask.value.name.trim()) return;
+    const addTask = async () => {
+        if (!newTask.value.title.trim()) return;
 
+        if (!tasks.value) return;
         const id = tasks.value.length > 0 ? Math.max(...tasks.value.map((t) => t.id)) + 1 : 1;
 
-        tasks.value.push({
+        const newTaskItem: ITaskItem = {
             id,
-            name: newTask.value.name,
+            title: newTask.value.title,
             description: newTask.value.description,
-            priority: newTask.value.priority,
+            priority: newTask.value.priority === 2 ? 2 : newTask.value.priority === 1 ? 1 : 0,
+            deadline: newTask.value.deadline,
+            tags: [...newTask.value.tags],
+            subtasks: newTask.value.subtasks.map((st) => ({ id: st.id, title: st.title, completed: st.completed })),
+            completed: false,
+        };
+
+        // 添加到本地状态
+        tasks.value?.push({
+            id,
+            title: newTask.value.title,
+            description: newTask.value.description,
+            priority: newTask.value.priority as 0 | 1 | 2,
             deadline: newTask.value.deadline,
             tags: [...newTask.value.tags],
             completed: false,
             subtasks: [...newTask.value.subtasks],
         });
 
+        // 保存到TaskStore
+        await taskStore.addTask(newTaskItem);
+
         // 重置表单
         newTask.value = {
-            name: "",
+            title: "",
             description: "",
-            priority: "medium",
+            priority: 1,
             deadline: "",
             tags: [],
             subtasks: [],
@@ -203,7 +199,7 @@
 
         newTask.value.subtasks.push({
             id,
-            name: newSubtask.value,
+            title: newSubtask.value,
             completed: false,
         });
 
@@ -221,12 +217,31 @@
     };
 
     // 切换任务完成状态
-    const toggleTaskComplete = (task: any) => {
+    const toggleTaskComplete = async (task: any) => {
         task.completed = !task.completed;
+
+        // 更新TaskStore中的数据
+        const storedTasks = await taskStore.getTasks();
+        const taskIndex = storedTasks.findIndex((t) => t.title === task.title);
+
+        if (taskIndex !== -1) {
+            const updatedTask = {
+                ...storedTasks[taskIndex],
+                // 更新主任务完成状态
+                completed: task.completed,
+                // 更新子任务完成状态
+                subtasks: task.subtasks.map((st: any) => ({
+                    title: st.name,
+                    completed: st.completed,
+                })),
+            };
+
+            await taskStore.updateTask(taskIndex, updatedTask);
+        }
     };
 
     // 切换子任务完成状态
-    const toggleSubtaskComplete = (subtask: any) => {
+    const toggleSubtaskComplete = async (subtask: any) => {
         subtask.completed = !subtask.completed;
 
         // 更新父任务状态
@@ -236,6 +251,25 @@
                 selectedTask.value.completed = true;
             } else {
                 selectedTask.value.completed = false;
+            }
+
+            // 更新TaskStore中的数据
+            const storedTasks = await taskStore.getTasks();
+            const taskIndex = storedTasks.findIndex((t) => t.title === selectedTask.value.title);
+
+            if (taskIndex !== -1) {
+                const updatedTask = {
+                    ...storedTasks[taskIndex],
+                    // 更新主任务完成状态
+                    completed: selectedTask.value.completed,
+                    // 更新子任务完成状态
+                    subtasks: selectedTask.value.subtasks.map((st: any) => ({
+                        title: st.name,
+                        completed: st.completed,
+                    })),
+                };
+
+                await taskStore.updateTask(taskIndex, updatedTask);
             }
         }
     };
@@ -373,7 +407,7 @@
                     <div class="card-body">
                         <h2 class="card-title flex justify-between">
                             任务列表
-                            <span class="badge badge-primary">{{ filteredTasks.length }} 个任务</span>
+                            <span class="badge badge-primary">{{ filteredTasks?.length }} 个任务</span>
                         </h2>
 
                         <div class="divider my-2"></div>
@@ -403,22 +437,16 @@
                                                 @change="toggleTaskComplete(task)"
                                                 class="checkbox checkbox-sm" />
                                         </td>
-                                        <td>{{ task.name }}</td>
+                                        <td>{{ task.title }}</td>
                                         <td>
                                             <div
                                                 class="badge"
                                                 :class="{
-                                                    'badge-error': task.priority === 'high',
-                                                    'badge-warning': task.priority === 'medium',
-                                                    'badge-info': task.priority === 'low',
+                                                    'badge-error': task.priority === 2,
+                                                    'badge-warning': task.priority === 1,
+                                                    'badge-info': task.priority === 0,
                                                 }">
-                                                {{
-                                                    task.priority === "high"
-                                                        ? "高"
-                                                        : task.priority === "medium"
-                                                        ? "中"
-                                                        : "低"
-                                                }}
+                                                {{ task.priority === 2 ? "高" : task.priority === 1 ? "中" : "低" }}
                                             </div>
                                         </td>
                                         <td>
@@ -448,7 +476,7 @@
                                             <button class="btn btn-sm btn-ghost" @click="selectTask(task)">详情</button>
                                         </td>
                                     </tr>
-                                    <tr v-if="filteredTasks.length === 0">
+                                    <tr v-if="filteredTasks?.length === 0">
                                         <td colspan="6" class="text-center py-4">没有找到符合条件的任务</td>
                                     </tr>
                                 </tbody>
@@ -469,21 +497,15 @@
                             :checked="selectedTask.completed"
                             @change="toggleTaskComplete(selectedTask)"
                             class="checkbox" />
-                        <span :class="{ 'line-through': selectedTask.completed }">{{ selectedTask.name }}</span>
+                        <span :class="{ 'line-through': selectedTask.completed }">{{ selectedTask.title }}</span>
                         <div
                             class="badge ml-2"
                             :class="{
-                                'badge-error': selectedTask.priority === 'high',
-                                'badge-warning': selectedTask.priority === 'medium',
-                                'badge-info': selectedTask.priority === 'low',
+                                'badge-error': selectedTask.priority === 2,
+                                'badge-warning': selectedTask.priority === 1,
+                                'badge-info': selectedTask.priority === 0,
                             }">
-                            {{
-                                selectedTask.priority === "high"
-                                    ? "高"
-                                    : selectedTask.priority === "medium"
-                                    ? "中"
-                                    : "低"
-                            }}
+                            {{ selectedTask.priority === 2 ? "高" : selectedTask.priority === 1 ? "中" : "低" }}
                         </div>
                     </h3>
 
@@ -537,7 +559,7 @@
                             <span class="label-text">任务名称</span>
                         </label>
                         <input
-                            v-model="newTask.name"
+                            v-model="newTask.title"
                             type="text"
                             placeholder="输入任务名称"
                             class="input input-bordered w-full" />
@@ -560,9 +582,9 @@
                                 <span class="label-text">优先级</span>
                             </label>
                             <select v-model="newTask.priority" class="select select-bordered w-full">
-                                <option value="high">高</option>
-                                <option value="medium">中</option>
-                                <option value="low">低</option>
+                                <option :value="2">高</option>
+                                <option :value="1">中</option>
+                                <option :value="0">低</option>
                             </select>
                         </div>
 
@@ -607,7 +629,7 @@
                                 v-for="(subtask, index) in newTask.subtasks"
                                 :key="subtask.id"
                                 class="flex items-center gap-2">
-                                <span>{{ subtask.name }}</span>
+                                <span>{{ subtask.title }}</span>
                                 <button @click="removeSubtask(index)" class="btn btn-xs btn-ghost btn-circle ml-auto">
                                     ×
                                 </button>
@@ -627,7 +649,7 @@
 
                 <div class="modal-action">
                     <button class="btn btn-ghost" @click="showNewTaskForm = false">取消</button>
-                    <button class="btn btn-primary" @click="addTask" :disabled="!newTask.name.trim()">创建任务</button>
+                    <button class="btn btn-primary" @click="addTask" :disabled="!newTask.title.trim()">创建任务</button>
                 </div>
             </div>
         </div>

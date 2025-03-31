@@ -1,6 +1,13 @@
 <script setup lang="ts">
-    import { ref, computed, onBeforeUnmount } from "vue";
+    import { ref, computed, onBeforeUnmount, onMounted, watch } from "vue";
+    import { FocusStore, TaskStore } from "../mods/Store";
+    import { type ITaskItem } from "../mods/Interface";
 
+    // 获取专注时间存储实例
+    const focusStore = FocusStore.getInstance();
+    // 获取任务存储实例
+    const taskStore = TaskStore.getInstance();
+    
     // 番茄钟设置
     const pomodoroSettings = ref({
         focusTime: 25, // 专注时间（分钟）
@@ -8,6 +15,32 @@
         longBreak: 15, // 长休息（分钟）
         longBreakInterval: 4, // 长休息间隔（次数）
     });
+    
+    // 保存番茄钟设置到本地存储
+    const savePomodoroSettings = () => {
+        localStorage.setItem('pomodoroSettings', JSON.stringify(pomodoroSettings.value));
+    };
+    
+    // 从本地存储加载番茄钟设置
+    const loadPomodoroSettings = () => {
+        const savedSettings = localStorage.getItem('pomodoroSettings');
+        if (savedSettings) {
+            const settings = JSON.parse(savedSettings);
+            pomodoroSettings.value = settings;
+            
+            // 根据当前模式更新计时器状态
+            if (!timerState.value.isRunning) {
+                if (timerState.value.mode === "focus") {
+                    timerState.value.minutes = pomodoroSettings.value.focusTime;
+                } else if (timerState.value.mode === "shortBreak") {
+                    timerState.value.minutes = pomodoroSettings.value.shortBreak;
+                } else if (timerState.value.mode === "longBreak") {
+                    timerState.value.minutes = pomodoroSettings.value.longBreak;
+                }
+                timerState.value.seconds = 0;
+            }
+        }
+    };
 
     // 计时器状态
     const timerState = ref({
@@ -20,35 +53,42 @@
     });
 
     // 任务列表
-    const tasks = ref([
-        { id: 1, name: "完成Trackify项目设计", completed: false, selected: false },
-        { id: 2, name: "团队会议", completed: false, selected: false },
-        { id: 3, name: "回复邮件", completed: false, selected: false },
-    ]);
+    const tasks = ref<{id: number, name: string, completed: boolean, selected: boolean, originalTask?: ITaskItem, originalIndex?: number}[]>([]);
+    
+    // 加载任务列表
+    const loadTasks = async () => {
+        await taskStore.init();
+        const storedTasks = await taskStore.getTasks();
+        
+        if (storedTasks && storedTasks.length > 0) {
+            // 将存储的任务转换为视图所需的格式
+            tasks.value = storedTasks.map((task, index) => ({
+                id: index + 1,
+                name: task.title,
+                completed: task.completed,
+                selected: false,
+                originalTask: task,
+                originalIndex: index
+            }));
+        } else {
+            tasks.value = [];
+        }
+    };
+    
+    // 组件挂载时初始化
+    onMounted(async () => {
+        // await focusStore.init();
+        await loadTasks();
+        loadPomodoroSettings();
+        
+        // 确保计时器状态与当前模式匹配
+        switchMode(timerState.value.mode);
+    });
 
     // 当前选中的任务
     const selectedTask = computed(() => {
         return tasks.value.find((task) => task.selected);
     });
-
-    // 新任务输入
-    const newTaskName = ref("");
-
-    // 添加新任务
-    const addTask = () => {
-        if (!newTaskName.value.trim()) return;
-
-        const id = tasks.value.length > 0 ? Math.max(...tasks.value.map((t) => t.id)) + 1 : 1;
-
-        tasks.value.push({
-            id,
-            name: newTaskName.value,
-            completed: false,
-            selected: false,
-        });
-
-        newTaskName.value = "";
-    };
 
     // 选择任务
     const selectTask = (task: any) => {
@@ -59,9 +99,16 @@
     };
 
     // 完成任务
-    const completeTask = (task: any) => {
+    const completeTask = async (task: any) => {
         task.completed = true;
         task.selected = false;
+        
+        // 如果任务有原始任务引用，更新TaskStore
+        if (task.originalTask && task.originalIndex !== undefined) {
+            const originalTask = task.originalTask;
+            originalTask.completed = true;
+            await taskStore.updateTask(task.originalIndex, originalTask);
+        }
     };
 
     // 开始计时器
@@ -83,6 +130,10 @@
                 if (timerState.value.mode === "focus") {
                     // 完成一个专注时段
                     timerState.value.completedSessions++;
+                    
+                    // 记录专注时间
+                    const today = new Date().toISOString().split('T')[0]; // 获取当前日期，格式为YYYY-MM-DD
+                    focusStore.addFocusTime(today, pomodoroSettings.value.focusTime);
 
                     // 判断是短休息还是长休息
                     if (timerState.value.completedSessions % pomodoroSettings.value.longBreakInterval === 0) {
@@ -156,6 +207,22 @@
         return (elapsedSeconds / totalSeconds) * 100;
     });
 
+    // 监听番茄钟设置变化，保存到本地存储
+    watch(pomodoroSettings, () => {
+        savePomodoroSettings();
+        // 如果当前模式是focus，则更新计时器时间
+        if (timerState.value.mode === "focus" && !timerState.value.isRunning) {
+            timerState.value.minutes = pomodoroSettings.value.focusTime;
+            timerState.value.seconds = 0;
+        } else if (timerState.value.mode === "shortBreak" && !timerState.value.isRunning) {
+            timerState.value.minutes = pomodoroSettings.value.shortBreak;
+            timerState.value.seconds = 0;
+        } else if (timerState.value.mode === "longBreak" && !timerState.value.isRunning) {
+            timerState.value.minutes = pomodoroSettings.value.longBreak;
+            timerState.value.seconds = 0;
+        }
+    }, { deep: true });
+    
     // 组件卸载前清除计时器
     onBeforeUnmount(() => {
         if (timerState.value.timerInterval) {
@@ -335,8 +402,8 @@
                     <div class="divider">可选任务</div>
 
                     <!-- 任务列表 -->
-                    <div class="overflow-y-auto max-h-64">
-                        <ul class="menu bg-base-100 rounded-box">
+                    <div class="overflow-y-auto w-full">
+                        <ul class="menu bg-base-100 rounded-box w-full">
                             <li v-for="task in tasks.filter((t) => !t.completed && !t.selected)" :key="task.id">
                                 <a @click="selectTask(task)">
                                     {{ task.name }}
@@ -346,52 +413,6 @@
                                 <span class="opacity-50 p-4">没有待完成的任务</span>
                             </li>
                         </ul>
-                    </div>
-
-                    <!-- 添加新任务 -->
-                    <div class="mt-4">
-                        <div class="join w-full">
-                            <input
-                                v-model="newTaskName"
-                                type="text"
-                                placeholder="添加新任务"
-                                class="input input-bordered join-item w-full"
-                                @keyup.enter="addTask" />
-                            <button class="btn join-item" @click="addTask">
-                                <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    class="h-5 w-5"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor">
-                                    <path
-                                        stroke-linecap="round"
-                                        stroke-linejoin="round"
-                                        stroke-width="2"
-                                        d="M12 4v16m8-8H4" />
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- 已完成任务 -->
-                    <div class="mt-4">
-                        <div class="collapse collapse-arrow bg-base-100">
-                            <input type="checkbox" />
-                            <div class="collapse-title font-medium">
-                                已完成任务 ({{ tasks.filter((t) => t.completed).length }})
-                            </div>
-                            <div class="collapse-content">
-                                <ul class="menu bg-base-100 rounded-box">
-                                    <li v-for="task in tasks.filter((t) => t.completed)" :key="task.id">
-                                        <span class="opacity-60 line-through">{{ task.name }}</span>
-                                    </li>
-                                    <li v-if="tasks.filter((t) => t.completed).length === 0">
-                                        <span class="opacity-50 p-4">没有已完成的任务</span>
-                                    </li>
-                                </ul>
-                            </div>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -403,7 +424,7 @@
 
                     <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4">
                         <div class="form-control">
-                            <label class="label">
+                            <label class="label mb-2">
                                 <span class="label-text">专注时间（分钟）</span>
                             </label>
                             <input
@@ -415,7 +436,7 @@
                         </div>
 
                         <div class="form-control">
-                            <label class="label">
+                            <label class="label mb-2">
                                 <span class="label-text">短休息（分钟）</span>
                             </label>
                             <input
@@ -427,7 +448,7 @@
                         </div>
 
                         <div class="form-control">
-                            <label class="label">
+                            <label class="label mb-2">
                                 <span class="label-text">长休息（分钟）</span>
                             </label>
                             <input
@@ -439,7 +460,7 @@
                         </div>
 
                         <div class="form-control">
-                            <label class="label">
+                            <label class="label mb-2">
                                 <span class="label-text">长休息间隔（次数）</span>
                             </label>
                             <input

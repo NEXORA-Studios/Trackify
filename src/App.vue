@@ -80,8 +80,10 @@
         </div>
 
         <!-- 主内容区域 -->
-        <main class="container mx-auto p-4">
-            <router-view />
+        <main id="main-container" class="container mx-auto p-4">
+            <Suspense>
+                <router-view />
+            </Suspense>
         </main>
     </div>
 </template>

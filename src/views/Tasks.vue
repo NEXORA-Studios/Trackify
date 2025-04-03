@@ -48,8 +48,11 @@
         const storedTasks = await taskStore.getTasks();
 
         if (storedTasks && storedTasks.length > 0) {
+            // 过滤掉隐藏的任务，只显示未隐藏的任务
+            const visibleTasks = storedTasks.filter(task => !task.hidden);
+            
             // 将存储的任务转换为视图所需的格式
-            const viewTasks = storedTasks.map((task, index) => ({
+            const viewTasks = visibleTasks.map((task, index) => ({
                 id: index + 1, // 确保每个任务有唯一ID
                 title: task.title,
                 description: task.description,
@@ -305,14 +308,21 @@
     const clearCompletedTasks = async () => {
         if (!tasks.value) return;
 
-        // 过滤掉已完成的任务
-        const updatedTasks = tasks.value.filter((task) => !task.completed);
+        // 获取所有任务
+        const storedTasks = await taskStore.getTasks();
+        
+        // 将已完成的任务标记为隐藏，而不是删除
+        storedTasks.forEach(task => {
+            if (task.completed) {
+                task.hidden = true;
+            }
+        });
 
-        // 更新本地状态
-        tasks.value = updatedTasks;
+        // 更新本地状态（只显示未隐藏的任务）
+        tasks.value = storedTasks.filter(task => !task.hidden);
 
-        // 保存到TaskStore
-        await taskStore.saveTasks(updatedTasks);
+        // 保存到TaskStore（保存所有任务，包括隐藏的）
+        await taskStore.saveTasks(storedTasks);
     };
 </script>
 

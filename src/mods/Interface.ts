@@ -9,6 +9,7 @@ export interface ITaskItem {
     tags: string[];
     subtasks: ISubTaskItem[];
     completed: boolean;
+    hidden?: boolean;
 }
 
 export interface ISubTaskItem {

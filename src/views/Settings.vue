@@ -2,6 +2,7 @@
     import { ref, onBeforeMount } from "vue";
     import { SettingStore } from "../mods/Store";
     import { ITheme, type ISettings } from "../mods/Interface";
+    import { EventBus } from "../mods/Eventbus";
 
     // 获取SettingStore实例
     const settingStore = SettingStore.getInstance();
@@ -62,24 +63,6 @@
         // { id: "ko-KR", name: "한국어" },
     ];
 
-    // 可用字体大小
-    // const availableFontSizes = [
-    //     { id: "small", name: "小" },
-    //     { id: "medium", name: "中" },
-    //     { id: "large", name: "大" },
-    // ];
-
-    // 可用强调色
-    // const availableAccentColors = [
-    //     { id: "primary", name: "主色调", class: "bg-primary" },
-    //     { id: "secondary", name: "次要色调", class: "bg-secondary" },
-    //     { id: "accent", name: "强调色", class: "bg-accent" },
-    //     { id: "info", name: "信息色", class: "bg-info" },
-    //     { id: "success", name: "成功色", class: "bg-success" },
-    //     { id: "warning", name: "警告色", class: "bg-warning" },
-    //     { id: "error", name: "错误色", class: "bg-error" },
-    // ];
-
     // 保存设置
     const saveSettings = async () => {
         // 构建符合ISettings接口的设置对象
@@ -121,7 +104,7 @@
     const changeTheme = async (themeId: string) => {
         themeSettings.value.currentTheme = themeId;
         // 应用主题变更
-        document.documentElement.setAttribute("data-theme", themeId);
+        EventBus.emit("theme:change", themeId);
 
         // 保存主题设置到SettingStore
         await settingStore.updateSettings({

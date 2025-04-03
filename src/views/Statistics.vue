@@ -103,7 +103,7 @@
             total: 0,
         };
 
-        // 筛选日期范围内的任务
+        // 筛选日期范围内的任务（包括隐藏的任务，以便统计所有任务）
         const tasksInRange = allTasks.filter((task) => {
             const taskDate = new Date(task.deadline);
             return taskDate >= startDate && taskDate <= endDate;

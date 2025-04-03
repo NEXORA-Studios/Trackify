@@ -1,4 +1,5 @@
 <script setup lang="ts">
+    import ThemeController from "./components/ThemeController.vue";
     // 导航菜单项
     const navItems = [
         { name: "仪表盘", path: "/", icon: "dashboard" },
@@ -10,6 +11,7 @@
 </script>
 
 <template>
+    <ThemeController />
     <div class="min-h-screen bg-base-100">
         <!-- 顶部导航栏 -->
         <div class="navbar bg-base-200 shadow-md">
@@ -44,10 +46,10 @@
                 <!-- Logo -->
                 <router-link to="/" class="flex items-center px-4 normal-case text-xl text-[#39A7B3] font-bold">
                     <img src="/logo.png" alt="logo" width="32" />
-                    <span class="translate-y-0.25 ml-2">Trackify</span>
+                    <span class="translate-y-0.25 ml-2 hidden lg:block">Trackify</span>
                 </router-link>
                 <span
-                    class="badge badge-warning rounded-sm translate-y-0.25 text-warning-content font-bold text-[16px] px-2">
+                    class="badge badge-warning rounded-sm translate-y-0.25 text-warning-content font-bold text-[16px] px-2 hidden sm:block">
                     Demo
                 </span>
             </div>
@@ -64,7 +66,7 @@
             </div>
 
             <!-- 右侧用户信息 -->
-            <div class="navbar-end">
+            <div class="navbar-end mr-1">
                 <div class="dropdown dropdown-end">
                     <label tabindex="0" class="btn btn-ghost btn-circle avatar">
                         <div

@@ -1,3 +1,11 @@
+* {
+    user-select: none;
+}
+
+img {
+    pointer-events: none;
+}
+
 @import "tailwindcss";
 @plugin "daisyui" {
     themes: all;

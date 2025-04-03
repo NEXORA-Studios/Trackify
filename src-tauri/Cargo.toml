@@ -1,6 +1,6 @@
 [package]
 name = "trackify"
-version = "0.1.0"
+version = "0.1.2"
 description = "A Tauri App"
 authors = ["you"]
 edition = "2021"
@@ -25,5 +25,5 @@ serde_json = "1"
 tauri-plugin-store = "2"
 
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
+tauri-plugin-autostart = "2"
 tauri-plugin-single-instance = "2"
-

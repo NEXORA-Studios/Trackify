@@ -57,11 +57,13 @@
 </script>
 
 <template>
-    <input
-        v-for="option in ThemeOptions"
-        type="checkbox"
-        :name="option.text"
-        :value="option.value"
-        class="toggle hidden theme-controller"
-        :checked="theme === option.value" />
+    <section data-region-for="theme-controller" class="hidden">
+        <input
+            v-for="option in ThemeOptions"
+            type="checkbox"
+            :name="option.text"
+            :value="option.value"
+            class="toggle theme-controller"
+            :checked="theme === option.value" />
+    </section>
 </template>

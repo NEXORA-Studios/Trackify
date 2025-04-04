@@ -21,6 +21,9 @@
                 // 筛选今日任务（截止日期是今天或已经逾期的未完成任务）
                 if (task.completed) return false;
 
+                // 筛选已隐藏的任务
+                if (task.hidden) return false;
+
                 const deadlineDate = new Date(task.deadline);
                 deadlineDate.setHours(0, 0, 0, 0);
 

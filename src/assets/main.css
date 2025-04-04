@@ -6,10 +6,14 @@ img {
     pointer-events: none;
 }
 
+::-webkit-scrollbar {
+    display: none;
+}
+
 @import "tailwindcss";
 @plugin "daisyui" {
     themes: all;
-    exclude: rootscrollgutter;
+    exclude: rootscrollgutter, scrollbar;
 }
 
 /* 自定义主题配置 */

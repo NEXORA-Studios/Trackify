@@ -1,7 +1,7 @@
 <script setup lang="ts">
     import { ref, computed, onMounted } from "vue";
     import { TaskStore } from "../mods/Store";
-    import { type ITaskItem, type ITaskList } from "../mods/Interface";
+    import type { ITaskItem, ITaskList, ISubTaskItem } from "../mods/Interface";
 
     // 获取TaskStore实例
     const taskStore = TaskStore.getInstance();
@@ -49,8 +49,8 @@
 
         if (storedTasks && storedTasks.length > 0) {
             // 过滤掉隐藏的任务，只显示未隐藏的任务
-            const visibleTasks = storedTasks.filter(task => !task.hidden);
-            
+            const visibleTasks = storedTasks.filter((task) => !task.hidden);
+
             // 将存储的任务转换为视图所需的格式
             const viewTasks = visibleTasks.map((task, index) => ({
                 id: index + 1, // 确保每个任务有唯一ID
@@ -221,7 +221,7 @@
     };
 
     // 切换任务完成状态
-    const toggleTaskComplete = async (task: any) => {
+    const toggleTaskComplete = async (task: ITaskItem) => {
         task.completed = !task.completed;
 
         // 更新TaskStore中的数据
@@ -229,15 +229,19 @@
         const taskIndex = storedTasks.findIndex((t) => t.title === task.title);
 
         if (taskIndex !== -1) {
+            console.error(storedTasks);
             const updatedTask = {
                 ...storedTasks[taskIndex],
                 // 更新主任务完成状态
                 completed: task.completed,
                 // 更新子任务完成状态
-                subtasks: task.subtasks.map((st: any) => ({
-                    title: st.name,
-                    completed: st.completed,
-                })),
+                subtasks: task.subtasks.map((st: ISubTaskItem) => {
+                    return {
+                        id: st.id,
+                        title: st.title,
+                        completed: task.completed,
+                    };
+                }),
             };
 
             await taskStore.updateTask(taskIndex, updatedTask);
@@ -245,7 +249,7 @@
     };
 
     // 切换子任务完成状态
-    const toggleSubtaskComplete = async (subtask: any) => {
+    const toggleSubtaskComplete = async (subtask: ISubTaskItem) => {
         subtask.completed = !subtask.completed;
 
         // 更新父任务状态
@@ -264,11 +268,10 @@
             if (taskIndex !== -1) {
                 const updatedTask = {
                     ...storedTasks[taskIndex],
-                    // 更新主任务完成状态
-                    completed: selectedTask.value.completed,
                     // 更新子任务完成状态
-                    subtasks: selectedTask.value.subtasks.map((st: any) => ({
-                        title: st.name,
+                    subtasks: selectedTask.value.subtasks.map((st: ISubTaskItem) => ({
+                        id: st.id,
+                        title: st.title,
                         completed: st.completed,
                     })),
                 };
@@ -310,16 +313,16 @@
 
         // 获取所有任务
         const storedTasks = await taskStore.getTasks();
-        
+
         // 将已完成的任务标记为隐藏，而不是删除
-        storedTasks.forEach(task => {
+        storedTasks.forEach((task) => {
             if (task.completed) {
                 task.hidden = true;
             }
         });
 
         // 更新本地状态（只显示未隐藏的任务）
-        tasks.value = storedTasks.filter(task => !task.hidden);
+        tasks.value = storedTasks.filter((task) => !task.hidden);
 
         // 保存到TaskStore（保存所有任务，包括隐藏的）
         await taskStore.saveTasks(storedTasks);
@@ -567,7 +570,7 @@
                                     :checked="subtask.completed"
                                     @change="toggleSubtaskComplete(subtask)"
                                     class="checkbox checkbox-sm" />
-                                <span :class="{ 'line-through': subtask.completed }">{{ subtask.name }}</span>
+                                <span :class="{ 'line-through': subtask.completed }">{{ subtask.title }}</span>
                             </div>
                             <div v-if="selectedTask.subtasks.length === 0" class="text-sm opacity-50">无子任务</div>
                         </div>

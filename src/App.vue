@@ -1,12 +1,31 @@
 <script setup lang="ts">
     import ThemeController from "./components/ThemeController.vue";
+    import { useI18n } from 'vue-i18n';
+    import { onBeforeMount } from 'vue';
+    import { SettingStore } from "./mods/Store";
+    
+    const { t, locale } = useI18n();
+    const settingStore = SettingStore.getInstance();
+    
+    // 在应用启动时加载语言设置
+    onBeforeMount(async () => {
+        await settingStore.init();
+        const settings = await settingStore.getSettings();
+        if (settings && settings.user && settings.user.language) {
+            // 将存储格式转换为组件使用的格式
+            const appLocale = settings.user.language === "zh_cn" ? "zh" : "en";
+            locale.value = appLocale;
+            localStorage.setItem("language", appLocale);
+        }
+    });
+    
     // 导航菜单项
     const navItems = [
-        { name: "仪表盘", path: "/", icon: "dashboard" },
-        { name: "任务", path: "/tasks", icon: "task" },
-        { name: "统计", path: "/statistics", icon: "chart" },
-        { name: "专注", path: "/focus", icon: "timer" },
-        { name: "设置", path: "/settings", icon: "settings" },
+        { name: t('nav.dashboard'), path: "/", icon: "dashboard" },
+        { name: t('nav.tasks'), path: "/tasks", icon: "task" },
+        { name: t('nav.statistics'), path: "/statistics", icon: "chart" },
+        { name: t('nav.focus'), path: "/focus", icon: "timer" },
+        { name: t('nav.settings'), path: "/settings", icon: "settings" },
     ];
 </script>
 
@@ -50,7 +69,7 @@
                 </router-link>
                 <span
                     class="badge badge-warning rounded-sm translate-y-0.25 text-warning-content font-bold text-[16px] px-2 hidden sm:block">
-                    Demo
+                    {{ t('header.demo') }}
                 </span>
             </div>
 
@@ -77,16 +96,16 @@
                     <ul
                         tabindex="0"
                         class="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-52">
-                        <li><a>个人资料</a></li>
-                        <li><a>设置</a></li>
-                        <li><a>退出</a></li>
+                        <li><a>{{ t('user.profile') }}</a></li>
+                        <li><a>{{ t('user.settings') }}</a></li>
+                        <li><a>{{ t('user.logout') }}</a></li>
                     </ul>
                 </div>
             </div>
         </div>
 
         <!-- 主内容区域 -->
-        <main id="main-container" class="container mx-auto p-4">
+        <main id="main-container" class="container mx-auto p-4 z-10">
             <Suspense>
                 <router-view />
             </Suspense>

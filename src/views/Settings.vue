@@ -3,10 +3,12 @@
     import { SettingStore } from "../mods/Store";
     import { ITheme, type ISettings } from "../mods/Interface";
     import { EventBus } from "../mods/Eventbus";
+    import { useI18n } from "vue-i18n";
 
     // 获取SettingStore实例
     const settingStore = SettingStore.getInstance();
     const saveButton = ref<HTMLButtonElement>();
+    const { locale } = useI18n();
 
     // 用户设置
     const userSettings = ref({
@@ -57,10 +59,8 @@
 
     // 可用语言
     const availableLanguages = [
-        { id: "zh-CN", name: "简体中文（尚不支持其他语言）" },
-        // { id: "en-US", name: "English" },
-        // { id: "ja-JP", name: "日本語" },
-        // { id: "ko-KR", name: "한국어" },
+        { id: "zh-CN", name: "简体中文" },
+        { id: "en-US", name: "English" },
     ];
 
     // 保存设置
@@ -72,7 +72,7 @@
                 username: userSettings.value.name,
                 email: userSettings.value.email,
                 avatar: userSettings.value.avatar,
-                language: userSettings.value.language === "zh-CN" ? "zh_cn" : "zh_cn", // 默认使用zh_cn
+                language: userSettings.value.language === "zh-CN" ? "zh_cn" : "en_US", // 转换为存储格式
             },
             notifications: {
                 task: notificationSettings.value.taskReminders,
@@ -114,6 +114,22 @@
         });
     };
 
+    // 切换语言
+    async function changeLanguage() {
+        locale.value = userSettings.value.language;
+        localStorage.setItem("language", userSettings.value.language);
+
+        // 保存语言设置到SettingStore
+        await settingStore.updateSettings({
+            user: {
+                username: userSettings.value.name,
+                email: userSettings.value.email,
+                avatar: userSettings.value.avatar,
+                language: userSettings.value.language === "zh" ? "zh_cn" : "en_US",
+            },
+        });
+    }
+
     // 在组件挂载时初始化SettingStore并加载设置
     onBeforeMount(async () => {
         await settingStore.init();
@@ -126,7 +142,7 @@
                 email: storedSettings.user.email,
                 avatar: storedSettings.user.avatar || "/avatar.png",
                 theme: storedSettings.theme.value,
-                language: storedSettings.user.language === "zh_cn" ? "zh-CN" : "zh-CN", // 转换为组件使用的格式
+                language: storedSettings.user.language === "zh_cn" ? "zh-CN" : "en-US", // 转换为组件使用的格式
             };
 
             // 更新通知设置
@@ -185,7 +201,7 @@
                 <!-- 用户设置 -->
                 <div id="user-settings" class="card bg-base-200 shadow-xl mb-6">
                     <div class="card-body">
-                        <h2 class="card-title">用户设置</h2>
+                        <h2 class="card-title">{{ $t("settings.profile.title") }}</h2>
 
                         <div class="flex flex-col md:flex-row gap-6 items-start">
                             <!-- 头像上传 -->
@@ -229,20 +245,6 @@
                                         placeholder="输入电子邮箱"
                                         class="input input-bordered w-full" />
                                 </div>
-
-                                <div class="form-control w-full mt-2">
-                                    <label class="label mb-2">
-                                        <span class="label-text">语言</span>
-                                    </label>
-                                    <select
-                                        v-model="userSettings.language"
-                                        class="select select-bordered w-full"
-                                        disabled>
-                                        <option v-for="lang in availableLanguages" :key="lang.id" :value="lang.id">
-                                            {{ lang.name }}
-                                        </option>
-                                    </select>
-                                </div>
                             </div>
                         </div>
                     </div>
@@ -251,7 +253,7 @@
                 <!-- 通知设置 -->
                 <div id="notification-settings" class="card bg-base-200 shadow-xl mb-6">
                     <div class="card-body">
-                        <h2 class="card-title">通知设置</h2>
+                        <h2 class="card-title">{{ $t("settings.notification.title") }}</h2>
 
                         <div class="form-control">
                             <label class="label cursor-pointer justify-start gap-4">
@@ -260,8 +262,10 @@
                                     v-model="notificationSettings.taskReminders"
                                     class="toggle toggle-primary" />
                                 <span class="label-text">
-                                    任务提醒
-                                    <p class="text-xs opacity-60">在任务即将到期时发送提醒</p>
+                                    {{ $t("settings.notification.taskReminders") }}
+                                    <p class="text-xs opacity-60">
+                                        {{ $t("settings.notification.taskRemindersDesc") }}
+                                    </p>
                                 </span>
                             </label>
                         </div>
@@ -273,8 +277,10 @@
                                     v-model="notificationSettings.deadlineAlerts"
                                     class="toggle toggle-primary" />
                                 <span class="label-text">
-                                    截止时间提醒
-                                    <p class="text-xs opacity-60">在任务截止前提醒</p>
+                                    {{ $t("settings.notification.deadlineAlerts") }}
+                                    <p class="text-xs opacity-60">
+                                        {{ $t("settings.notification.deadlineAlertsDesc") }}
+                                    </p>
                                 </span>
                             </label>
                         </div>
@@ -286,8 +292,8 @@
                                     v-model="notificationSettings.dailyDigest"
                                     class="toggle toggle-primary" />
                                 <span class="label-text">
-                                    每日摘要
-                                    <p class="text-xs opacity-60">每天发送当日任务摘要</p>
+                                    {{ $t('settings.notification.dailyDigest') }}
+                                    <p class="text-xs opacity-60">{{ $t('settings.notification.dailyDigestDesc') }}</p>
                                 </span>
                             </label>
                         </div> -->
@@ -299,24 +305,24 @@
                                     v-model="notificationSettings.soundEnabled"
                                     class="toggle toggle-primary" />
                                 <span class="label-text">
-                                    提醒声音
-                                    <p class="text-xs opacity-60">启用通知声音</p>
+                                    {{ $t("settings.notification.soundEnabled") }}
+                                    <p class="text-xs opacity-60">{{ $t("settings.notification.soundEnabledDesc") }}</p>
                                 </span>
                             </label>
                         </div>
 
                         <div class="form-control w-full max-w-xs mt-4">
                             <label class="label mb-2">
-                                <span class="label-text">提前提醒时间</span>
+                                <span class="label-text">{{ $t("settings.notification.reminderTime") }}</span>
                             </label>
                             <select v-model="notificationSettings.reminderTime" class="select select-bordered">
-                                <option value="5">5分钟前</option>
-                                <option value="10">10分钟前</option>
-                                <option value="15">15分钟前</option>
-                                <option value="30">30分钟前</option>
-                                <option value="60">1小时前</option>
-                                <option value="120">2小时前</option>
-                                <option value="1440">1天前</option>
+                                <option value="5">{{ $t("settings.notification.reminderOptions.5min") }}</option>
+                                <option value="10">{{ $t("settings.notification.reminderOptions.10min") }}</option>
+                                <option value="15">{{ $t("settings.notification.reminderOptions.15min") }}</option>
+                                <option value="30">{{ $t("settings.notification.reminderOptions.30min") }}</option>
+                                <option value="60">{{ $t("settings.notification.reminderOptions.1hour") }}</option>
+                                <option value="120">{{ $t("settings.notification.reminderOptions.2hours") }}</option>
+                                <option value="1440">{{ $t("settings.notification.reminderOptions.1day") }}</option>
                             </select>
                         </div>
                     </div>
@@ -325,12 +331,12 @@
                 <!-- 主题与界面设置 -->
                 <div id="theme-settings" class="card bg-base-200 shadow-xl mb-6">
                     <div class="card-body">
-                        <h2 class="card-title">主题与界面设置</h2>
+                        <h2 class="card-title">{{ $t("settings.theme.title") }}</h2>
 
                         <!-- 主题选择 -->
                         <div class="form-control w-full">
                             <label class="label">
-                                <span class="label-text">应用主题</span>
+                                <span class="label-text">{{ $t("settings.theme.appTheme") }}</span>
                             </label>
                             <div class="grid grid-cols-3 gap-2 mt-2">
                                 <div
@@ -339,9 +345,25 @@
                                     class="border rounded-lg p-2 cursor-pointer text-center"
                                     :class="{ 'border-primary': themeSettings.currentTheme === theme.id }"
                                     @click="changeTheme(theme.id)">
-                                    {{ theme.name }}
+                                    {{ $t(`settings.theme.themes.${theme.id}`) }}
                                 </div>
                             </div>
+                        </div>
+
+                        <!-- 语言设置 -->
+                        <div class="form-control w-full mt-6">
+                            <label class="label mb-2">
+                                <span class="label-text">{{ $t("settings.language.selectLanguage") }}</span>
+                            </label>
+                            <br />
+                            <select
+                                v-model="userSettings.language"
+                                class="select select-bordered w-full max-w-xs"
+                                @change="changeLanguage">
+                                <option v-for="lang in availableLanguages" :key="lang.id" :value="lang.id">
+                                    {{ lang.name }}
+                                </option>
+                            </select>
                         </div>
 
                         <!-- 强调色选择 -->
@@ -396,7 +418,7 @@
                 <!-- 集成与同步设置 -->
                 <div id="integration-settings" class="card bg-base-200 shadow-xl mb-6">
                     <div class="card-body">
-                        <h2 class="card-title">集成与同步设置</h2>
+                        <h2 class="card-title">{{ $t("settings.integration.title") }}</h2>
 
                         <div role="alert" class="alert alert-warning alert-outline flex">
                             <svg
@@ -410,7 +432,7 @@
                                     stroke-width="2"
                                     d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                             </svg>
-                            <span class="mb-0.5">提示：集成与同步尚未支持</span>
+                            <span class="mb-0.5">{{ $t("settings.integration.notSupported") }}</span>
                         </div>
                         <!-- <div class="form-control">
                             <label class="label cursor-pointer justify-start gap-4">

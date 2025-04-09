@@ -35,7 +35,7 @@ export interface ISettings {
         avatar?: string;
         username: string;
         email: string;
-        language: "zh_cn";
+        language: "zh_cn" | "en_US";
     };
     notifications: {
         task: boolean;

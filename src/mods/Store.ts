@@ -274,11 +274,10 @@ export class SettingStore {
     private store?: Store;
     private readonly path = "settings.bin";
     private readonly defaultSettings: ISettings = {
-        __version__: 1,
+        __version__: 2,
         user: {
             username: "用户",
             email: "user@example.com",
-            language: "zh_cn",
         },
         notifications: {
             task: true,
@@ -289,6 +288,7 @@ export class SettingStore {
         },
         theme: {
             value: "light",
+            language: "zh-CN",
         },
     };
 

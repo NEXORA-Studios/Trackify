@@ -1,6 +1,10 @@
 <script setup lang="ts">
     import { ref, onMounted } from "vue";
     import { TaskStore } from "../mods/Store";
+    import { useI18n } from "vue-i18n"; // 导入i18n
+
+    // 获取i18n实例
+    const { t } = useI18n();
 
     // 获取任务存储实例
     const taskStore = TaskStore.getInstance();
@@ -126,17 +130,17 @@
 
 <template>
     <div class="dashboard">
-        <h1 class="text-2xl font-bold mb-6 mt-4">仪表盘</h1>
+        <h1 class="text-2xl font-bold mb-6 mt-4">{{ t("dashboard.title") }}</h1>
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
             <!-- 今日任务卡片 -->
             <div class="card bg-base-200 shadow-xl md:col-span-2">
                 <div class="card-body">
                     <h2 class="card-title flex justify-between">
-                        今日任务
-                        <span class="badge badge-primary"
-                            >{{ todayTasks.filter((t) => !t.completed).length }} 待完成</span
-                        >
+                        {{ t("dashboard.todays.title") }}
+                        <span class="badge badge-primary">
+                            {{ t("dashboard.todays.count", { count: todayTasks.filter((t) => !t.completed).length }) }}
+                        </span>
                     </h2>
 
                     <div class="divider my-2"></div>
@@ -147,11 +151,11 @@
                             <thead>
                                 <tr>
                                     <th class="w-12"></th>
-                                    <th>任务名称</th>
-                                    <th class="w-24">优先级</th>
-                                    <th class="w-24">截止时间</th>
-                                    <th class="w-32">进度</th>
-                                    <th class="w-24">操作</th>
+                                    <th>{{ t("dashboard.todays.taskname") }}</th>
+                                    <th class="w-24">{{ t("dashboard.todays.priority.title") }}</th>
+                                    <th class="w-24">{{ t("dashboard.todays.deadline") }}</th>
+                                    <th class="w-32">{{ t("dashboard.todays.progress") }}</th>
+                                    <th class="w-24">{{ t("dashboard.todays.actions.title") }}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -174,10 +178,10 @@
                                             }">
                                             {{
                                                 task.priority === "high"
-                                                    ? "高"
+                                                    ? t("dashboard.todays.priority.high")
                                                     : task.priority === "medium"
-                                                    ? "中"
-                                                    : "低"
+                                                    ? t("dashboard.todays.priority.medium")
+                                                    : t("dashboard.todays.priority.low")
                                             }}
                                         </div>
                                     </td>
@@ -198,7 +202,7 @@
                                             class="btn btn-sm btn-primary"
                                             @click="startFocus(task)"
                                             :disabled="isFocusing || task.completed">
-                                            专注
+                                            {{ t("dashboard.todays.actions.focus") }}
                                         </button>
                                     </td>
                                 </tr>
@@ -211,7 +215,7 @@
             <!-- 专注模式卡片 -->
             <div class="card bg-base-200 shadow-xl">
                 <div class="card-body">
-                    <h2 class="card-title">专注模式</h2>
+                    <h2 class="card-title">{{ t("dashboard.focus.title") }}</h2>
 
                     <div class="flex flex-col items-center justify-center py-6 h-full">
                         <div class="text-5xl font-bold mb-6">
@@ -219,13 +223,17 @@
                         </div>
 
                         <div class="text-center mb-4" v-if="currentTask">
-                            <p class="text-sm opacity-70">当前任务</p>
+                            <p class="text-sm opacity-70">{{ t("dashboard.focus.now") }}</p>
                             <p class="font-medium">{{ currentTask.name }}</p>
                         </div>
 
                         <div class="flex gap-2">
-                            <button class="btn btn-primary" @click="startFocus()" v-if="!isFocusing">开始专注</button>
-                            <button class="btn btn-error" @click="pauseFocus()" v-else>暂停</button>
+                            <button class="btn btn-primary" @click="startFocus()" v-if="!isFocusing">
+                                {{ t("dashboard.focus.start") }}
+                            </button>
+                            <button class="btn btn-error" @click="pauseFocus()" v-else>
+                                {{ t("dashboard.focus.stop") }}
+                            </button>
                         </div>
                     </div>
                 </div>

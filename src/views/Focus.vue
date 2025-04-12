@@ -2,12 +2,16 @@
     import { ref, computed, onBeforeUnmount, onMounted, watch } from "vue";
     import { FocusStore, TaskStore } from "../mods/Store";
     import { type ITaskItem } from "../mods/Interface";
+    import { useI18n } from "vue-i18n";
+
+    // 初始化i18n
+    const { t } = useI18n();
 
     // 获取专注时间存储实例
     const focusStore = FocusStore.getInstance();
     // 获取任务存储实例
     const taskStore = TaskStore.getInstance();
-    
+
     // 番茄钟设置
     const pomodoroSettings = ref({
         focusTime: 25, // 专注时间（分钟）
@@ -15,19 +19,19 @@
         longBreak: 15, // 长休息（分钟）
         longBreakInterval: 4, // 长休息间隔（次数）
     });
-    
+
     // 保存番茄钟设置到本地存储
     const savePomodoroSettings = () => {
-        localStorage.setItem('pomodoroSettings', JSON.stringify(pomodoroSettings.value));
+        localStorage.setItem("pomodoroSettings", JSON.stringify(pomodoroSettings.value));
     };
-    
+
     // 从本地存储加载番茄钟设置
     const loadPomodoroSettings = () => {
-        const savedSettings = localStorage.getItem('pomodoroSettings');
+        const savedSettings = localStorage.getItem("pomodoroSettings");
         if (savedSettings) {
             const settings = JSON.parse(savedSettings);
             pomodoroSettings.value = settings;
-            
+
             // 根据当前模式更新计时器状态
             if (!timerState.value.isRunning) {
                 if (timerState.value.mode === "focus") {
@@ -53,13 +57,22 @@
     });
 
     // 任务列表
-    const tasks = ref<{id: number, name: string, completed: boolean, selected: boolean, originalTask?: ITaskItem, originalIndex?: number}[]>([]);
-    
+    const tasks = ref<
+        {
+            id: number;
+            name: string;
+            completed: boolean;
+            selected: boolean;
+            originalTask?: ITaskItem;
+            originalIndex?: number;
+        }[]
+    >([]);
+
     // 加载任务列表
     const loadTasks = async () => {
         await taskStore.init();
         const storedTasks = await taskStore.getTasks();
-        
+
         if (storedTasks && storedTasks.length > 0) {
             // 将存储的任务转换为视图所需的格式
             tasks.value = storedTasks.map((task, index) => ({
@@ -68,19 +81,19 @@
                 completed: task.completed,
                 selected: false,
                 originalTask: task,
-                originalIndex: index
+                originalIndex: index,
             }));
         } else {
             tasks.value = [];
         }
     };
-    
+
     // 组件挂载时初始化
     onMounted(async () => {
         // await focusStore.init();
         await loadTasks();
         loadPomodoroSettings();
-        
+
         // 确保计时器状态与当前模式匹配
         switchMode(timerState.value.mode);
     });
@@ -102,7 +115,7 @@
     const completeTask = async (task: any) => {
         task.completed = true;
         task.selected = false;
-        
+
         // 如果任务有原始任务引用，更新TaskStore
         if (task.originalTask && task.originalIndex !== undefined) {
             const originalTask = task.originalTask;
@@ -130,9 +143,9 @@
                 if (timerState.value.mode === "focus") {
                     // 完成一个专注时段
                     timerState.value.completedSessions++;
-                    
+
                     // 记录专注时间
-                    const today = new Date().toISOString().split('T')[0]; // 获取当前日期，格式为YYYY-MM-DD
+                    const today = new Date().toISOString().split("T")[0]; // 获取当前日期，格式为YYYY-MM-DD
                     focusStore.addFocusTime(today, pomodoroSettings.value.focusTime);
 
                     // 判断是短休息还是长休息
@@ -208,21 +221,25 @@
     });
 
     // 监听番茄钟设置变化，保存到本地存储
-    watch(pomodoroSettings, () => {
-        savePomodoroSettings();
-        // 如果当前模式是focus，则更新计时器时间
-        if (timerState.value.mode === "focus" && !timerState.value.isRunning) {
-            timerState.value.minutes = pomodoroSettings.value.focusTime;
-            timerState.value.seconds = 0;
-        } else if (timerState.value.mode === "shortBreak" && !timerState.value.isRunning) {
-            timerState.value.minutes = pomodoroSettings.value.shortBreak;
-            timerState.value.seconds = 0;
-        } else if (timerState.value.mode === "longBreak" && !timerState.value.isRunning) {
-            timerState.value.minutes = pomodoroSettings.value.longBreak;
-            timerState.value.seconds = 0;
-        }
-    }, { deep: true });
-    
+    watch(
+        pomodoroSettings,
+        () => {
+            savePomodoroSettings();
+            // 如果当前模式是focus，则更新计时器时间
+            if (timerState.value.mode === "focus" && !timerState.value.isRunning) {
+                timerState.value.minutes = pomodoroSettings.value.focusTime;
+                timerState.value.seconds = 0;
+            } else if (timerState.value.mode === "shortBreak" && !timerState.value.isRunning) {
+                timerState.value.minutes = pomodoroSettings.value.shortBreak;
+                timerState.value.seconds = 0;
+            } else if (timerState.value.mode === "longBreak" && !timerState.value.isRunning) {
+                timerState.value.minutes = pomodoroSettings.value.longBreak;
+                timerState.value.seconds = 0;
+            }
+        },
+        { deep: true }
+    );
+
     // 组件卸载前清除计时器
     onBeforeUnmount(() => {
         if (timerState.value.timerInterval) {
@@ -233,20 +250,14 @@
 
 <template>
     <div class="focus-page">
-        <h1 class="text-2xl font-bold mb-6 mt-4">专注模式</h1>
+        <h1 class="text-2xl font-bold mb-6 mt-4">{{ t("focus.title") }}</h1>
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
             <!-- 番茄钟计时器 -->
             <div class="card bg-base-200 shadow-xl md:col-span-2">
                 <div class="card-body flex flex-col items-center">
                     <h2 class="card-title self-start">
-                        {{
-                            timerState.mode === "focus"
-                                ? "专注时间"
-                                : timerState.mode === "shortBreak"
-                                ? "短休息"
-                                : "长休息"
-                        }}
+                        {{ t("focus.pomodoro.title") }}
                     </h2>
 
                     <!-- 计时器显示 -->
@@ -283,7 +294,9 @@
                         <!-- 时间显示 -->
                         <div class="text-center z-10">
                             <div class="text-6xl font-bold">{{ formattedTime }}</div>
-                            <div class="text-sm opacity-70 mt-2">{{ timerState.completedSessions }} 个番茄钟已完成</div>
+                            <div class="text-sm opacity-70 mt-2">
+                                {{ t("focus.pomodoro.count", { count: timerState.completedSessions }) }}
+                            </div>
                         </div>
                     </div>
 
@@ -352,19 +365,19 @@
                             class="btn"
                             :class="{ 'btn-active': timerState.mode === 'focus' }"
                             @click="switchMode('focus')">
-                            专注
+                            {{ t("focus.pomodoro.mode.focus") }}
                         </button>
                         <button
                             class="btn"
                             :class="{ 'btn-active': timerState.mode === 'shortBreak' }"
                             @click="switchMode('shortBreak')">
-                            短休息
+                            {{ t("focus.pomodoro.mode.shortbreak") }}
                         </button>
                         <button
                             class="btn"
                             :class="{ 'btn-active': timerState.mode === 'longBreak' }"
                             @click="switchMode('longBreak')">
-                            长休息
+                            {{ t("focus.pomodoro.mode.longbreak") }}
                         </button>
                     </div>
                 </div>
@@ -373,11 +386,11 @@
             <!-- 任务专注 -->
             <div class="card bg-base-200 shadow-xl">
                 <div class="card-body">
-                    <h2 class="card-title">任务专注</h2>
+                    <h2 class="card-title">{{ t("focus.taskpad.title") }}</h2>
 
                     <!-- 当前选中的任务 -->
                     <div class="bg-base-300 p-4 rounded-box mt-4" v-if="selectedTask">
-                        <h3 class="font-medium">当前专注任务</h3>
+                        <h3 class="font-medium">{{ t("focus.taskpad.now") }}</h3>
                         <div class="flex items-center gap-2 mt-2">
                             <div class="flex-1">
                                 <p>{{ selectedTask.name }}</p>
@@ -399,7 +412,7 @@
                         </div>
                     </div>
 
-                    <div class="divider">可选任务</div>
+                    <div class="divider">{{ t("focus.taskpad.available") }}</div>
 
                     <!-- 任务列表 -->
                     <div class="overflow-y-auto w-full">
@@ -410,7 +423,7 @@
                                 </a>
                             </li>
                             <li v-if="tasks.filter((t) => !t.completed && !t.selected).length === 0">
-                                <span class="opacity-50 p-4">没有待完成的任务</span>
+                                <span class="opacity-50 p-4">{{ t("focus.taskpad.empty") }}</span>
                             </li>
                         </ul>
                     </div>
@@ -420,12 +433,12 @@
             <!-- 专注设置 -->
             <div class="card bg-base-200 shadow-xl md:col-span-3">
                 <div class="card-body">
-                    <h2 class="card-title">专注设置</h2>
+                    <h2 class="card-title">{{ t("focus.settings.title") }}</h2>
 
                     <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4">
                         <div class="form-control">
                             <label class="label mb-2">
-                                <span class="label-text">专注时间（分钟）</span>
+                                <span class="label-text">{{ t("focus.settings.form.focus") }}</span>
                             </label>
                             <input
                                 v-model.number="pomodoroSettings.focusTime"
@@ -437,7 +450,7 @@
 
                         <div class="form-control">
                             <label class="label mb-2">
-                                <span class="label-text">短休息（分钟）</span>
+                                <span class="label-text">{{ t("focus.settings.form.shortbreak") }}</span>
                             </label>
                             <input
                                 v-model.number="pomodoroSettings.shortBreak"
@@ -449,7 +462,7 @@
 
                         <div class="form-control">
                             <label class="label mb-2">
-                                <span class="label-text">长休息（分钟）</span>
+                                <span class="label-text">{{ t("focus.settings.form.longbreak") }}</span>
                             </label>
                             <input
                                 v-model.number="pomodoroSettings.longBreak"
@@ -461,7 +474,7 @@
 
                         <div class="form-control">
                             <label class="label mb-2">
-                                <span class="label-text">长休息间隔（次数）</span>
+                                <span class="label-text">{{ t("focus.settings.form.longbreakinterval") }}</span>
                             </label>
                             <input
                                 v-model.number="pomodoroSettings.longBreakInterval"
@@ -484,7 +497,7 @@
                                 stroke-width="2"
                                 d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                         </svg>
-                        <span>番茄工作法建议25分钟专注，5分钟短休息，每完成4个番茄钟后进行15分钟长休息。</span>
+                        <span>{{ t("focus.settings.notice") }}</span>
                     </div>
                 </div>
             </div>

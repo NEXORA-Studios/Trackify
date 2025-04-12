@@ -1,32 +1,35 @@
 <script setup lang="ts">
     import ThemeController from "./components/ThemeController.vue";
-    import { useI18n } from 'vue-i18n';
-    import { onBeforeMount } from 'vue';
+    import { useI18n } from "vue-i18n";
+    import { onBeforeMount, ref, watch } from "vue";
     import { SettingStore } from "./mods/Store";
-    
+
     const { t, locale } = useI18n();
     const settingStore = SettingStore.getInstance();
-    
+
     // 在应用启动时加载语言设置
     onBeforeMount(async () => {
         await settingStore.init();
         const settings = await settingStore.getSettings();
-        if (settings && settings.user && settings.user.language) {
-            // 将存储格式转换为组件使用的格式
-            const appLocale = settings.user.language === "zh_cn" ? "zh" : "en";
+        if (settings && settings.user && settings.theme.language) {
+            const appLocale = settings.theme.language;
             locale.value = appLocale;
             localStorage.setItem("language", appLocale);
         }
     });
-    
+
     // 导航菜单项
-    const navItems = [
-        { name: t('nav.dashboard'), path: "/", icon: "dashboard" },
-        { name: t('nav.tasks'), path: "/tasks", icon: "task" },
-        { name: t('nav.statistics'), path: "/statistics", icon: "chart" },
-        { name: t('nav.focus'), path: "/focus", icon: "timer" },
-        { name: t('nav.settings'), path: "/settings", icon: "settings" },
-    ];
+    const navItems = ref();
+
+    watch(locale, () => {
+        navItems.value = [
+            { name: t("nav.dashboard"), path: "/", icon: "dashboard" },
+            { name: t("nav.tasks"), path: "/tasks", icon: "task" },
+            { name: t("nav.statistics"), path: "/statistics", icon: "chart" },
+            { name: t("nav.focus"), path: "/focus", icon: "timer" },
+            { name: t("nav.settings"), path: "/settings", icon: "settings" },
+        ];
+    });
 </script>
 
 <template>
@@ -69,7 +72,7 @@
                 </router-link>
                 <span
                     class="badge badge-warning rounded-sm translate-y-0.25 text-warning-content font-bold text-[16px] px-2 hidden sm:block">
-                    {{ t('header.demo') }}
+                    Demo
                 </span>
             </div>
 
@@ -96,9 +99,15 @@
                     <ul
                         tabindex="0"
                         class="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-52">
-                        <li><a>{{ t('user.profile') }}</a></li>
-                        <li><a>{{ t('user.settings') }}</a></li>
-                        <li><a>{{ t('user.logout') }}</a></li>
+                        <li>
+                            <a>{{ t("nav.user.profile") }}</a>
+                        </li>
+                        <li>
+                            <a>{{ t("nav.user.settings") }}</a>
+                        </li>
+                        <li>
+                            <a>{{ t("nav.user.logout") }}</a>
+                        </li>
                     </ul>
                 </div>
             </div>

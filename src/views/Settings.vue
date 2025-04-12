@@ -1,7 +1,7 @@
 <script setup lang="ts">
     import { ref, onBeforeMount } from "vue";
     import { SettingStore } from "../mods/Store";
-    import { ITheme, type ISettings } from "../mods/Interface";
+    import { ILanguage, ITheme, type ISettings } from "../mods/Interface";
     import { EventBus } from "../mods/Eventbus";
     import { useI18n } from "vue-i18n";
 
@@ -16,7 +16,6 @@
         email: "user@example.com",
         avatar: "/avatar.png",
         theme: "light",
-        language: "zh-CN",
     });
 
     // 通知设置
@@ -31,9 +30,7 @@
     // 主题设置
     const themeSettings = ref({
         currentTheme: "light",
-        accentColor: "primary",
-        fontSize: "medium",
-        compactMode: false,
+        language: "zh-CN",
     });
 
     // 集成设置
@@ -72,7 +69,6 @@
                 username: userSettings.value.name,
                 email: userSettings.value.email,
                 avatar: userSettings.value.avatar,
-                language: userSettings.value.language === "zh-CN" ? "zh_cn" : "en_US", // 转换为存储格式
             },
             notifications: {
                 task: notificationSettings.value.taskReminders,
@@ -83,6 +79,7 @@
             },
             theme: {
                 value: themeSettings.value.currentTheme as ITheme,
+                language: themeSettings.value.language as ILanguage,
             },
         };
 
@@ -110,14 +107,15 @@
         await settingStore.updateSettings({
             theme: {
                 value: themeId as ITheme,
+                language: themeSettings.value.language as ILanguage,
             },
         });
     };
 
     // 切换语言
     async function changeLanguage() {
-        locale.value = userSettings.value.language;
-        localStorage.setItem("language", userSettings.value.language);
+        locale.value = themeSettings.value.language;
+        localStorage.setItem("language", themeSettings.value.language);
 
         // 保存语言设置到SettingStore
         await settingStore.updateSettings({
@@ -125,7 +123,12 @@
                 username: userSettings.value.name,
                 email: userSettings.value.email,
                 avatar: userSettings.value.avatar,
-                language: userSettings.value.language === "zh" ? "zh_cn" : "en_US",
+            },
+        });
+        await settingStore.updateSettings({
+            theme: {
+                value: themeSettings.value.currentTheme as ITheme,
+                language: themeSettings.value.language as ILanguage,
             },
         });
     }
@@ -142,7 +145,6 @@
                 email: storedSettings.user.email,
                 avatar: storedSettings.user.avatar || "/avatar.png",
                 theme: storedSettings.theme.value,
-                language: storedSettings.user.language === "zh_cn" ? "zh-CN" : "en-US", // 转换为组件使用的格式
             };
 
             // 更新通知设置
@@ -156,6 +158,7 @@
 
             // 更新主题设置
             themeSettings.value.currentTheme = storedSettings.theme.value;
+            themeSettings.value.language = storedSettings.theme.language;
 
             // 应用主题
             document.documentElement.setAttribute("data-theme", storedSettings.theme.value);
@@ -178,19 +181,19 @@
 
 <template>
     <div class="settings-page">
-        <h1 class="text-2xl font-bold mb-6 mt-4">设置</h1>
+        <h1 class="text-2xl font-bold mb-6 mt-4">{{ $t("settings.title") }}</h1>
 
         <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
             <!-- 左侧设置导航 -->
             <div class="md:col-span-1">
                 <ul class="menu bg-base-200 w-full rounded-box">
                     <li>
-                        <h2 class="menu-title">设置选项</h2>
+                        <h2 class="menu-title">{{ $t("settings.menu") }}</h2>
                         <ul>
-                            <li><a href="#user-settings" class="active">用户设置</a></li>
-                            <li><a href="#notification-settings">通知设置</a></li>
-                            <li><a href="#theme-settings">主题与界面</a></li>
-                            <li><a href="#integration-settings">集成与同步</a></li>
+                            <li><a href="#user-settings" class="active">{{ $t("settings.profile.title") }}</a></li>
+                            <li><a href="#notification-settings">{{ $t("settings.notification.title") }}</a></li>
+                            <li><a href="#theme-settings">{{ $t("settings.theme.title") }}</a></li>
+                            <li><a href="#integration-settings">{{ $t("settings.integration.title") }}</a></li>
                         </ul>
                     </li>
                 </ul>
@@ -217,7 +220,7 @@
                                     </div>
                                 </div>
                                 <label class="btn btn-sm btn-outline">
-                                    更换头像
+                                    {{ $t("settings.profile.form.changeavatar") }}
                                     <input type="file" class="hidden" accept="image/*" @change="uploadAvatar" />
                                 </label>
                             </div>
@@ -226,23 +229,23 @@
                             <div class="flex-1 w-full">
                                 <div class="form-control w-full">
                                     <label class="label mb-2">
-                                        <span class="label-text">用户名</span>
+                                        <span class="label-text">{{ $t("settings.profile.form.username.title") }}</span>
                                     </label>
                                     <input
                                         v-model="userSettings.name"
                                         type="text"
-                                        placeholder="输入用户名"
+                                        :placeholder="$t('settings.profile.form.username.placeholder')"
                                         class="input input-bordered w-full" />
                                 </div>
 
                                 <div class="form-control w-full mt-2">
                                     <label class="label mb-2">
-                                        <span class="label-text">电子邮箱</span>
+                                        <span class="label-text">{{ $t("settings.profile.form.email.title") }}</span>
                                     </label>
                                     <input
                                         v-model="userSettings.email"
                                         type="email"
-                                        placeholder="输入电子邮箱"
+                                        :placeholder="$t('settings.profile.form.email.placeholder')"
                                         class="input input-bordered w-full" />
                                 </div>
                             </div>
@@ -262,9 +265,9 @@
                                     v-model="notificationSettings.taskReminders"
                                     class="toggle toggle-primary" />
                                 <span class="label-text">
-                                    {{ $t("settings.notification.taskReminders") }}
+                                    {{ $t("settings.notification.form.taskreminder") }}
                                     <p class="text-xs opacity-60">
-                                        {{ $t("settings.notification.taskRemindersDesc") }}
+                                        {{ $t("settings.notification.form.taskRemindersDesc") }}
                                     </p>
                                 </span>
                             </label>
@@ -277,9 +280,9 @@
                                     v-model="notificationSettings.deadlineAlerts"
                                     class="toggle toggle-primary" />
                                 <span class="label-text">
-                                    {{ $t("settings.notification.deadlineAlerts") }}
+                                    {{ $t("settings.notification.form.deadlinealert") }}
                                     <p class="text-xs opacity-60">
-                                        {{ $t("settings.notification.deadlineAlertsDesc") }}
+                                        {{ $t("settings.notification.form.deadlineAlertsDesc") }}
                                     </p>
                                 </span>
                             </label>
@@ -305,24 +308,24 @@
                                     v-model="notificationSettings.soundEnabled"
                                     class="toggle toggle-primary" />
                                 <span class="label-text">
-                                    {{ $t("settings.notification.soundEnabled") }}
-                                    <p class="text-xs opacity-60">{{ $t("settings.notification.soundEnabledDesc") }}</p>
+                                    {{ $t("settings.notification.form.soundenabled") }}
+                                    <p class="text-xs opacity-60">{{ $t("settings.notification.form.soundEnabledDesc") }}</p>
                                 </span>
                             </label>
                         </div>
 
                         <div class="form-control w-full max-w-xs mt-4">
                             <label class="label mb-2">
-                                <span class="label-text">{{ $t("settings.notification.reminderTime") }}</span>
+                                <span class="label-text">{{ $t("settings.notification.form.remindertime.title") }}</span>
                             </label>
                             <select v-model="notificationSettings.reminderTime" class="select select-bordered">
-                                <option value="5">{{ $t("settings.notification.reminderOptions.5min") }}</option>
-                                <option value="10">{{ $t("settings.notification.reminderOptions.10min") }}</option>
-                                <option value="15">{{ $t("settings.notification.reminderOptions.15min") }}</option>
-                                <option value="30">{{ $t("settings.notification.reminderOptions.30min") }}</option>
-                                <option value="60">{{ $t("settings.notification.reminderOptions.1hour") }}</option>
-                                <option value="120">{{ $t("settings.notification.reminderOptions.2hours") }}</option>
-                                <option value="1440">{{ $t("settings.notification.reminderOptions.1day") }}</option>
+                                <option value="5">{{ $t("settings.notification.form.remindertime.options.5m") }}</option>
+                                <option value="10">{{ $t("settings.notification.form.remindertime.options.10m") }}</option>
+                                <option value="15">{{ $t("settings.notification.form.remindertime.options.15m") }}</option>
+                                <option value="30">{{ $t("settings.notification.form.remindertime.options.30m") }}</option>
+                                <option value="60">{{ $t("settings.notification.form.remindertime.options.1hr") }}</option>
+                                <option value="120">{{ $t("settings.notification.form.remindertime.options.2hr") }}</option>
+                                <option value="1440">{{ $t("settings.notification.form.remindertime.options.1d") }}</option>
                             </select>
                         </div>
                     </div>
@@ -336,7 +339,7 @@
                         <!-- 主题选择 -->
                         <div class="form-control w-full">
                             <label class="label">
-                                <span class="label-text">{{ $t("settings.theme.appTheme") }}</span>
+                                <span class="label-text">{{ $t("settings.theme.form.theme") }}</span>
                             </label>
                             <div class="grid grid-cols-3 gap-2 mt-2">
                                 <div
@@ -345,7 +348,7 @@
                                     class="border rounded-lg p-2 cursor-pointer text-center"
                                     :class="{ 'border-primary': themeSettings.currentTheme === theme.id }"
                                     @click="changeTheme(theme.id)">
-                                    {{ $t(`settings.theme.themes.${theme.id}`) }}
+                                    {{ $t(`settings.theme.form.themeoptions.${theme.id}`) }}
                                 </div>
                             </div>
                         </div>
@@ -353,11 +356,11 @@
                         <!-- 语言设置 -->
                         <div class="form-control w-full mt-6">
                             <label class="label mb-2">
-                                <span class="label-text">{{ $t("settings.language.selectLanguage") }}</span>
+                                <span class="label-text">{{ $t("settings.theme.form.language") }}</span>
                             </label>
                             <br />
                             <select
-                                v-model="userSettings.language"
+                                v-model="themeSettings.language"
                                 class="select select-bordered w-full max-w-xs"
                                 @change="changeLanguage">
                                 <option v-for="lang in availableLanguages" :key="lang.id" :value="lang.id">
@@ -432,7 +435,7 @@
                                     stroke-width="2"
                                     d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                             </svg>
-                            <span class="mb-0.5">{{ $t("settings.integration.notSupported") }}</span>
+                            <span class="mb-0.5">{{ $t("settings.integration.notice") }}</span>
                         </div>
                         <!-- <div class="form-control">
                             <label class="label cursor-pointer justify-start gap-4">
@@ -490,7 +493,7 @@
 
                 <!-- 保存按钮 -->
                 <div class="flex justify-end mb-6">
-                    <button ref="saveButton" class="btn btn-info" @click="saveSettings">保存设置</button>
+                    <button ref="saveButton" class="btn btn-info" @click="saveSettings">{{ $t("settings.savebutton") }}</button>
                 </div>
             </div>
         </div>

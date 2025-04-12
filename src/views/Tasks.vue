@@ -1,7 +1,11 @@
 <script setup lang="ts">
     import { ref, computed, onMounted } from "vue";
+    import { useI18n } from "vue-i18n";
     import { TaskStore } from "../mods/Store";
     import type { ITaskItem, ITaskList, ISubTaskItem } from "../mods/Interface";
+
+    // 使用 vue-i18n
+    const { t } = useI18n();
 
     // 获取TaskStore实例
     const taskStore = TaskStore.getInstance();
@@ -331,7 +335,7 @@
 
 <template>
     <div class="tasks-page">
-        <h1 class="text-2xl font-bold mb-6 mt-4">任务管理</h1>
+        <h1 class="text-2xl font-bold mb-6 mt-4">{{ t("tasks.title") }}</h1>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <!-- 左侧：筛选和任务列表 -->
@@ -339,49 +343,49 @@
                 <!-- 筛选卡片 -->
                 <div class="card bg-base-200 shadow-xl mb-6">
                     <div class="card-body">
-                        <h2 class="card-title">筛选任务</h2>
+                        <h2 class="card-title">{{ t("tasks.filter.title") }}</h2>
 
                         <!-- 搜索框 -->
                         <div class="form-control">
                             <label class="label mb-2">
-                                <span class="label-text">搜索</span>
+                                <span class="label-text">{{ t("tasks.filter.form.taskname.title") }}</span>
                             </label>
                             <input
                                 v-model="filters.search"
                                 type="text"
-                                placeholder="搜索任务名称或描述"
+                                :placeholder="t('tasks.filter.form.taskname.placeholder')"
                                 class="input input-bordered w-full" />
                         </div>
 
                         <!-- 优先级筛选 -->
                         <div class="form-control">
                             <label class="label mb-2">
-                                <span class="label-text">优先级</span>
+                                <span class="label-text">{{ t("tasks.filter.form.priority.title") }}</span>
                             </label>
                             <select v-model="filters.priority" class="select select-bordered w-full">
-                                <option value="all">全部</option>
-                                <option value="high">高</option>
-                                <option value="medium">中</option>
-                                <option value="low">低</option>
+                                <option value="all">{{ t("tasks.filter.form.priority.title") }}</option>
+                                <option value="high">{{ t("tasks.filter.form.priority.high") }}</option>
+                                <option value="medium">{{ t("tasks.filter.form.priority.medium") }}</option>
+                                <option value="low">{{ t("tasks.filter.form.priority.low") }}</option>
                             </select>
                         </div>
 
                         <!-- 状态筛选 -->
                         <div class="form-control">
                             <label class="label mb-2">
-                                <span class="label-text">状态</span>
+                                <span class="label-text">{{ t("tasks.filter.form.status.title") }}</span>
                             </label>
                             <select v-model="filters.status" class="select select-bordered w-full">
-                                <option value="all">全部</option>
-                                <option value="pending">待完成</option>
-                                <option value="completed">已完成</option>
+                                <option value="all">{{ t("tasks.filter.form.status.title") }}</option>
+                                <option value="pending">{{ t("tasks.filter.form.status.todo") }}</option>
+                                <option value="completed">{{ t("tasks.filter.form.status.finish") }}</option>
                             </select>
                         </div>
 
                         <!-- 日期范围筛选 -->
                         <div class="form-control">
                             <label class="label mb-2">
-                                <span class="label-text">日期范围</span>
+                                <span class="label-text">{{ t("tasks.filter.form.daterange") }}</span>
                             </label>
                             <div class="grid grid-cols-2 gap-2">
                                 <input v-model="filters.dateRange.start" type="date" class="input input-bordered" />
@@ -392,7 +396,7 @@
                         <!-- 标签筛选 -->
                         <div class="form-control">
                             <label class="label">
-                                <span class="label-text">标签</span>
+                                <span class="label-text">{{ t("tasks.filter.form.tag.title") }}</span>
                             </label>
                             <div class="flex flex-wrap gap-2 mb-2">
                                 <div
@@ -406,7 +410,9 @@
                                 </div>
                             </div>
                             <div class="dropdown w-full">
-                                <label tabindex="0" class="btn btn-outline btn-info btn-sm w-full">选择标签</label>
+                                <label tabindex="0" class="btn btn-outline btn-info btn-sm w-full">{{
+                                    t("tasks.filter.form.tag.button")
+                                }}</label>
                                 <ul
                                     tabindex="0"
                                     class="dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-full">
@@ -419,15 +425,19 @@
 
                         <!-- 重置按钮 -->
                         <div class="mt-4">
-                            <button @click="resetFilters" class="btn btn-outline btn-error w-full">重置筛选</button>
+                            <button @click="resetFilters" class="btn btn-outline btn-error w-full">
+                                {{ t("tasks.filter.form.reset") }}
+                            </button>
                         </div>
                     </div>
                 </div>
 
                 <!-- 添加任务按钮 -->
-                <button @click="showNewTaskForm = true" class="btn btn-info w-full mb-2">添加新任务</button>
+                <button @click="showNewTaskForm = true" class="btn btn-info w-full mb-2">
+                    {{ t("tasks.actions.add") }}
+                </button>
                 <button @click="clearCompletedTasks" class="btn btn-success btn-outline w-full mb-6">
-                    清理已完成任务
+                    {{ t("tasks.actions.clean") }}
                 </button>
             </div>
 
@@ -437,8 +447,10 @@
                 <div class="card bg-base-200 shadow-xl">
                     <div class="card-body">
                         <h2 class="card-title flex justify-between">
-                            任务列表
-                            <span class="badge badge-primary">{{ filteredTasks?.length }} 个任务</span>
+                            {{ t("tasks.list.title") }}
+                            <span class="badge badge-primary"
+                                >{{ filteredTasks?.length }} {{ t("tasks.list.title") }}</span
+                            >
                         </h2>
 
                         <div class="divider my-2"></div>
@@ -449,11 +461,11 @@
                                 <thead>
                                     <tr>
                                         <th class="w-12"></th>
-                                        <th>任务名称</th>
-                                        <th class="w-24">优先级</th>
-                                        <th class="w-32">截止时间</th>
-                                        <th class="w-32">标签</th>
-                                        <th class="w-24">操作</th>
+                                        <th>{{ t("tasks.list.taskname") }}</th>
+                                        <th class="w-24">{{ t("tasks.list.priority.title") }}</th>
+                                        <th class="w-32">{{ t("tasks.list.deadline") }}</th>
+                                        <th class="w-32">{{ t("tasks.list.tag") }}</th>
+                                        <th class="w-24">{{ t("tasks.list.action.title") }}</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -477,7 +489,13 @@
                                                     'badge-warning': task.priority === 1,
                                                     'badge-info': task.priority === 0,
                                                 }">
-                                                {{ task.priority === 2 ? "高" : task.priority === 1 ? "中" : "低" }}
+                                                {{
+                                                    task.priority === 2
+                                                        ? t("tasks.list.priority.high")
+                                                        : task.priority === 1
+                                                        ? t("tasks.list.priority.medium")
+                                                        : t("tasks.list.priority.low")
+                                                }}
                                             </div>
                                         </td>
                                         <td>
@@ -506,7 +524,9 @@
                                             </div>
                                         </td>
                                         <td>
-                                            <button class="btn btn-sm btn-ghost" @click="selectTask(task)">详情</button>
+                                            <button class="btn btn-sm btn-ghost" @click="selectTask(task)">
+                                                {{ t("tasks.list.action.button") }}
+                                            </button>
                                         </td>
                                     </tr>
                                     <tr v-if="filteredTasks?.length === 0">
@@ -538,28 +558,44 @@
                                 'badge-warning': selectedTask.priority === 1,
                                 'badge-info': selectedTask.priority === 0,
                             }">
-                            {{ selectedTask.priority === 2 ? "高" : selectedTask.priority === 1 ? "中" : "低" }}
+                            {{
+                                selectedTask.priority === 2
+                                    ? t("tasks.modals.details.priority.high")
+                                    : selectedTask.priority === 1
+                                    ? t("tasks.modals.details.priority.medium")
+                                    : t("tasks.modals.details.priority.low")
+                            }}
                         </div>
                     </h3>
 
                     <div class="py-4">
-                        <p class="text-sm opacity-70 mb-1">截止时间</p>
+                        <p class="text-sm opacity-70 mb-1">{{ t("tasks.modals.details.deadline") }}</p>
                         <p>
-                            {{ selectedTask.deadline ? new Date(selectedTask.deadline).toLocaleString() : "未设置" }}
+                            {{
+                                selectedTask.deadline
+                                    ? new Date(selectedTask.deadline).toLocaleString()
+                                    : t("tasks.modals.details.nodeadline")
+                            }}
                         </p>
 
-                        <p class="text-sm opacity-70 mt-4 mb-1">描述</p>
-                        <p>{{ selectedTask.description }}</p>
+                        <p class="text-sm opacity-70 mt-4 mb-1">{{ t("tasks.modals.details.description") }}</p>
+                        <p v-if="selectedTask.description.length > 0">{{ selectedTask.description }}</p>
+                        <p v-else class="text-sm opacity-50">{{ t("tasks.modals.details.nodescription") }}</p>
 
-                        <p class="text-sm opacity-70 mt-4 mb-1">标签</p>
+                        <p class="text-sm opacity-70 mt-4 mb-1">{{ t("tasks.modals.details.tag") }}</p>
                         <div class="flex flex-wrap gap-2">
-                            <div v-for="(tag, index) in selectedTask.tags" :key="index" class="badge badge-outline">
+                            <div
+                                v-for="(tag, index) in selectedTask.tags"
+                                :key="index"
+                                class="badge badge-outline badge-info">
                                 {{ tag }}
                             </div>
-                            <div v-if="selectedTask.tags.length === 0" class="text-sm opacity-50">无标签</div>
+                            <div v-if="selectedTask.tags.length === 0" class="text-sm opacity-50">
+                                {{ t("tasks.modals.details.notag") }}
+                            </div>
                         </div>
 
-                        <p class="text-sm opacity-70 mt-4 mb-1">子任务</p>
+                        <p class="text-sm opacity-70 mt-4 mb-1">{{ t("tasks.modals.details.subtask") }}</p>
                         <div class="flex flex-col gap-2">
                             <div
                                 v-for="subtask in selectedTask.subtasks"
@@ -572,13 +608,15 @@
                                     class="checkbox checkbox-sm" />
                                 <span :class="{ 'line-through': subtask.completed }">{{ subtask.title }}</span>
                             </div>
-                            <div v-if="selectedTask.subtasks.length === 0" class="text-sm opacity-50">无子任务</div>
+                            <div v-if="selectedTask.subtasks.length === 0" class="text-sm opacity-50">
+                                {{ t("tasks.modals.details.nosubtask") }}
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 <div class="modal-action">
-                    <button class="btn" @click="closeTaskDetail">关闭</button>
+                    <button class="btn" @click="closeTaskDetail">{{ t("tasks.modals.details.actions.close") }}</button>
                 </div>
             </div>
         </div>
@@ -586,27 +624,27 @@
         <!-- 新建任务模态框 -->
         <div class="modal" :class="{ 'modal-open': showNewTaskForm }">
             <div class="modal-box w-11/12 max-w-3xl">
-                <h3 class="font-bold text-lg">创建新任务</h3>
+                <h3 class="font-bold text-lg">{{ t("tasks.modals.add.title") }}</h3>
 
                 <div class="py-4">
                     <div class="form-control w-full">
                         <label class="label mb-2">
-                            <span class="label-text">任务名称</span>
+                            <span class="label-text">{{ t("tasks.modals.add.form.taskname.title") }}</span>
                         </label>
                         <input
                             v-model="newTask.title"
                             type="text"
-                            placeholder="输入任务名称"
+                            :placeholder="t('tasks.modals.add.form.taskname.placeholder')"
                             class="input input-bordered w-full" />
                     </div>
 
                     <div class="form-control w-full mt-2">
                         <label class="label mb-2">
-                            <span class="label-text">任务描述</span>
+                            <span class="label-text">{{ t("tasks.modals.add.form.description.title") }}</span>
                         </label>
                         <textarea
                             v-model="newTask.description"
-                            placeholder="输入任务描述"
+                            :placeholder="t('tasks.modals.add.form.description.placeholder')"
                             class="textarea textarea-bordered w-full"
                             rows="3"></textarea>
                     </div>
@@ -614,18 +652,18 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
                         <div class="form-control w-full">
                             <label class="label mb-2">
-                                <span class="label-text">优先级</span>
+                                <span class="label-text">{{ t("tasks.modals.add.form.priority.title") }}</span>
                             </label>
                             <select v-model="newTask.priority" class="select select-bordered w-full">
-                                <option :value="2">高</option>
-                                <option :value="1">中</option>
-                                <option :value="0">低</option>
+                                <option :value="2">{{ t("tasks.modals.add.form.priority.high") }}</option>
+                                <option :value="1">{{ t("tasks.modals.add.form.priority.medium") }}</option>
+                                <option :value="0">{{ t("tasks.modals.add.form.priority.low") }}</option>
                             </select>
                         </div>
 
                         <div class="form-control w-full">
                             <label class="label mb-2">
-                                <span class="label-text">截止时间</span>
+                                <span class="label-text">{{ t("tasks.modals.add.form.deadline") }}</span>
                             </label>
                             <input
                                 v-model="newTask.deadline"
@@ -636,7 +674,7 @@
 
                     <div class="form-control w-full mt-2">
                         <label class="label">
-                            <span class="label-text">标签</span>
+                            <span class="label-text">{{ t("tasks.modals.add.form.tag.title") }}</span>
                         </label>
                         <div class="flex flex-wrap gap-2 mb-2">
                             <div v-for="(tag, index) in newTask.tags" :key="index" class="badge badge-primary gap-1">
@@ -648,16 +686,18 @@
                             <input
                                 v-model="newTag"
                                 type="text"
-                                placeholder="添加标签"
+                                :placeholder="t('tasks.modals.add.form.tag.placeholder')"
                                 class="input input-bordered join-item w-full"
                                 @keyup.enter="addTagToNewTask" />
-                            <button class="btn join-item" @click="addTagToNewTask">添加</button>
+                            <button class="btn join-item" @click="addTagToNewTask">
+                                {{ t("tasks.modals.add.actions.add") }}
+                            </button>
                         </div>
                     </div>
 
                     <div class="form-control w-full mt-2">
                         <label class="label">
-                            <span class="label-text">子任务</span>
+                            <span class="label-text">{{ t("tasks.modals.add.form.subtask.title") }}</span>
                         </label>
                         <div class="flex flex-col gap-2 mb-2">
                             <div
@@ -674,17 +714,23 @@
                             <input
                                 v-model="newSubtask"
                                 type="text"
-                                placeholder="添加子任务"
+                                :placeholder="t('tasks.modals.add.form.subtask.placeholder')"
                                 class="input input-bordered join-item w-full"
                                 @keyup.enter="addSubtaskToNewTask" />
-                            <button class="btn join-item" @click="addSubtaskToNewTask">添加</button>
+                            <button class="btn join-item" @click="addSubtaskToNewTask">
+                                {{ t("tasks.modals.add.actions.add") }}
+                            </button>
                         </div>
                     </div>
                 </div>
 
                 <div class="modal-action">
-                    <button class="btn btn-ghost" @click="showNewTaskForm = false">取消</button>
-                    <button class="btn btn-primary" @click="addTask" :disabled="!newTask.title.trim()">创建任务</button>
+                    <button class="btn btn-ghost" @click="showNewTaskForm = false">
+                        {{ t("tasks.modals.add.actions.cancel") }}
+                    </button>
+                    <button class="btn btn-primary" @click="addTask" :disabled="!newTask.title.trim()">
+                        {{ t("tasks.modals.add.actions.create") }}
+                    </button>
                 </div>
             </div>
         </div>

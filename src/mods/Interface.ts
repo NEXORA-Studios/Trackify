@@ -29,13 +29,14 @@ export type ITheme =
     | "retro"
     | "cyberpunk";
 
+export type ILanguage = "zh-CN" | "en-US";
+
 export interface ISettings {
-    __version__: number,
+    __version__: number;
     user: {
         avatar?: string;
         username: string;
         email: string;
-        language: "zh_cn" | "en_US";
     };
     notifications: {
         task: boolean;
@@ -46,6 +47,7 @@ export interface ISettings {
     };
     theme: {
         value: ITheme;
+        language: ILanguage;
     };
 }
 

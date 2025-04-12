@@ -6,6 +6,10 @@
     import VDUStackbarFocus from "../components/VDUStackbarFocus.vue";
     import "vue-data-ui/style.css";
     import VDUStackbarComplete from "../components/VDUStackbarComplete.vue";
+    import { useI18n } from "vue-i18n"; // 导入i18n
+
+    // 获取i18n实例
+    const { t, locale } = useI18n();
 
     // 获取任务存储实例
     const taskStore = TaskStore.getInstance();
@@ -33,17 +37,17 @@
         const total = focusTimeData.value.reduce((sum, day) => sum + day.minutes, 0);
         const hours = Math.floor(total / 60);
         const minutes = total % 60;
-        return `${hours}小时${minutes}分钟`;
+        return t('statistics.focuschart.counts.total', { h: hours, min: minutes });
     });
 
     // 计算平均每日专注时间
     const averageFocusTime = computed(() => {
-        if (focusTimeData.value.length === 0) return "0小时0分钟";
+        if (focusTimeData.value.length === 0) return t('statistics.focuschart.counts.average', { h: 0, min: 0 });
         const total = focusTimeData.value.reduce((sum, day) => sum + day.minutes, 0);
         const average = Math.round(total / focusTimeData.value.length);
         const hours = Math.floor(average / 60);
         const minutes = average % 60;
-        return `${hours}小时${minutes}分钟`;
+        return t('statistics.focuschart.counts.average', { h: hours, min: minutes });
     });
 
     // 计算任务完成率
@@ -92,15 +96,29 @@
 
     // 格式化日期为显示格式
     const formatDate = (date: Date, range: string): string => {
-        console.debug(date.toISOString(), range);
-        switch (range) {
-            case "week":
-            case "year":
-            default:
-                // 显示星期几
-                return `${date.getMonth() + 1}月${date.getDate()}日`;
-            case "month":
-                return `${date.getDate()}日`;
+        const month = date.getMonth() + 1;
+        const day = date.getDate();
+        
+        // 根据当前语言返回不同格式的日期
+        if (locale.value === 'zh-CN') {
+            switch (range) {
+                case "week":
+                case "year":
+                default:
+                    return `${month}月${day}日`;
+                case "month":
+                    return `${day}日`;
+            }
+        } else {
+            // 英文格式
+            switch (range) {
+                case "week":
+                case "year":
+                default:
+                    return `${month}/${day}`;
+                case "month":
+                    return `${day}`;
+            }
         }
     };
 
@@ -226,7 +244,7 @@
     <div class="statistics-page lg:-mx-9">
         <div class="flex justify-between items-center">
             <section class="flex gap-8 items-center">
-                <h1 class="text-2xl font-bold mb-6 mt-4">统计与分析</h1>
+                <h1 class="text-2xl font-bold mb-6 mt-4">{{ t('statistics.title') }}</h1>
             </section>
 
             <!-- 时间范围选择 -->
@@ -236,20 +254,20 @@
                         class="btn btn-sm"
                         :class="{ 'btn-active': timeRange === 'week' }"
                         @click="changeTimeRange('week')">
-                        本周
+                        {{ t('statistics.timerange.week') }}
                     </button>
                     <button
                         class="btn btn-sm"
                         :class="{ 'btn-active': timeRange === 'month' }"
                         @click="changeTimeRange('month')">
-                        本月
+                        {{ t('statistics.timerange.month') }}
                     </button>
                     <button
                         class="btn btn-sm"
                         :class="{ 'btn-active': timeRange === 'year' }"
                         disabled
                         @click="changeTimeRange('year')">
-                        本年
+                        {{ t('statistics.timerange.year') }}
                     </button>
                 </div>
             </div>
@@ -273,9 +291,9 @@
                             d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                     </svg>
                 </div>
-                <div class="stat-title">总任务数</div>
+                <div class="stat-title">{{ t('statistics.cards.total.title') }}</div>
                 <div class="stat-value text-primary">{{ taskStats.total }}</div>
-                <div class="stat-desc">所有创建的任务</div>
+                <div class="stat-desc">{{ t('statistics.cards.total.description') }}</div>
             </div>
 
             <!-- 已完成任务 -->
@@ -290,9 +308,9 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                     </svg>
                 </div>
-                <div class="stat-title">已完成任务</div>
+                <div class="stat-title">{{ t('statistics.cards.finish.title') }}</div>
                 <div class="stat-value text-success">{{ taskStats.completed }}</div>
-                <div class="stat-desc">完成率 {{ taskCompletionRate }}%</div>
+                <div class="stat-desc">{{ t('statistics.cards.finish.description', { rate: taskCompletionRate }) }}</div>
             </div>
 
             <!-- 待完成任务 -->
@@ -311,9 +329,9 @@
                             d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                 </div>
-                <div class="stat-title">待完成任务</div>
+                <div class="stat-title">{{ t('statistics.cards.wait.title') }}</div>
                 <div class="stat-value text-warning">{{ taskStats.pending }}</div>
-                <div class="stat-desc">正在进行中</div>
+                <div class="stat-desc">{{ t('statistics.cards.wait.description') }}</div>
             </div>
 
             <!-- 逾期任务 -->
@@ -332,11 +350,11 @@
                             d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                     </svg>
                 </div>
-                <div class="stat-title">逾期任务</div>
+                <div class="stat-title">{{ t('statistics.cards.overdue.title') }}</div>
                 <div class="stat-value text-error">
                     <div class="stat-value text-error">{{ taskStats.overdue }}</div>
                 </div>
-                <div class="stat-desc">已超过截止时间</div>
+                <div class="stat-desc">{{ t('statistics.cards.overdue.description') }}</div>
             </div>
         </div>
 
@@ -344,7 +362,7 @@
             <!-- 任务完成情况统计 -->
             <div class="w-full card bg-base-200 shadow-xl">
                 <div class="card-body">
-                    <h2 class="card-title">任务完成情况</h2>
+                    <h2 class="card-title">{{ t('statistics.taskchart.title') }}</h2>
                     <br />
                     <section class="w-full flex justify-center items-center">
                         <VDUStackbarComplete
@@ -359,10 +377,10 @@
             <div class="w-full card bg-base-200 shadow-xl">
                 <div class="card-body">
                     <h2 class="card-title flex justify-between">
-                        专注时间统计
+                        {{ t('statistics.focuschart.title') }}
                         <div>
-                            <span class="badge badge-primary mr-2">总计: {{ totalFocusTime }}</span>
-                            <span class="badge badge-secondary">平均: {{ averageFocusTime }}/天</span>
+                            <span class="badge badge-primary mr-2">{{ totalFocusTime }}</span>
+                            <span class="badge badge-secondary">{{ averageFocusTime }}</span>
                         </div>
                     </h2>
                     <br />

@@ -1,8 +1,8 @@
 [package]
 name = "trackify"
-version = "0.3.1"
-description = "A Tauri App"
-authors = ["you"]
+version = "0.3.2"
+description = "Trackify · Easily manage your time"
+authors = ["Jim Lin"]
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html

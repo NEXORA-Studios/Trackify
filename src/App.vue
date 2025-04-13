@@ -19,7 +19,13 @@
     });
 
     // 导航菜单项
-    const navItems = ref();
+    const navItems = ref([
+        { name: t("nav.dashboard"), path: "/", icon: "dashboard" },
+        { name: t("nav.tasks"), path: "/tasks", icon: "task" },
+        { name: t("nav.statistics"), path: "/statistics", icon: "chart" },
+        { name: t("nav.focus"), path: "/focus", icon: "timer" },
+        { name: t("nav.settings"), path: "/settings", icon: "settings" },
+    ]);
 
     watch(locale, () => {
         navItems.value = [

@@ -20,7 +20,7 @@
 
     // 通知设置
     const notificationSettings = ref({
-        taskReminders: true,
+        taskReminders: false,
         deadlineAlerts: true,
         dailyDigest: false,
         soundEnabled: true,
@@ -190,13 +190,25 @@
                     <li>
                         <h2 class="menu-title">{{ $t("settings.menu") }}</h2>
                         <ul>
-                            <li><a href="#user-settings" class="active">{{ $t("settings.profile.title") }}</a></li>
-                            <li><a href="#notification-settings">{{ $t("settings.notification.title") }}</a></li>
-                            <li><a href="#theme-settings">{{ $t("settings.theme.title") }}</a></li>
-                            <li><a href="#integration-settings">{{ $t("settings.integration.title") }}</a></li>
+                            <li>
+                                <a href="#user-settings" class="active">{{ $t("settings.profile.title") }}</a>
+                            </li>
+                            <li>
+                                <a href="#notification-settings">{{ $t("settings.notification.title") }}</a>
+                            </li>
+                            <li>
+                                <a href="#theme-settings">{{ $t("settings.theme.title") }}</a>
+                            </li>
+                            <li>
+                                <a href="#integration-settings">{{ $t("settings.integration.title") }}</a>
+                            </li>
                         </ul>
                     </li>
                 </ul>
+                <br />
+                <button ref="saveButton" class="w-full btn btn-info" @click="saveSettings">
+                    {{ $t("settings.savebutton") }}
+                </button>
             </div>
 
             <!-- 右侧设置内容 -->
@@ -258,7 +270,7 @@
                     <div class="card-body">
                         <h2 class="card-title">{{ $t("settings.notification.title") }}</h2>
 
-                        <div class="form-control">
+                        <!-- <div class="form-control">
                             <label class="label cursor-pointer justify-start gap-4">
                                 <input
                                     type="checkbox"
@@ -271,7 +283,7 @@
                                     </p>
                                 </span>
                             </label>
-                        </div>
+                        </div> -->
 
                         <div class="form-control mt-2">
                             <label class="label cursor-pointer justify-start gap-4">
@@ -309,23 +321,41 @@
                                     class="toggle toggle-primary" />
                                 <span class="label-text">
                                     {{ $t("settings.notification.form.soundenabled") }}
-                                    <p class="text-xs opacity-60">{{ $t("settings.notification.form.soundEnabledDesc") }}</p>
+                                    <p class="text-xs opacity-60">
+                                        {{ $t("settings.notification.form.soundEnabledDesc") }}
+                                    </p>
                                 </span>
                             </label>
                         </div>
 
                         <div class="form-control w-full max-w-xs mt-4">
                             <label class="label mb-2">
-                                <span class="label-text">{{ $t("settings.notification.form.remindertime.title") }}</span>
+                                <span class="label-text">{{
+                                    $t("settings.notification.form.remindertime.title")
+                                }}</span>
                             </label>
                             <select v-model="notificationSettings.reminderTime" class="select select-bordered">
-                                <option value="5">{{ $t("settings.notification.form.remindertime.options.5m") }}</option>
-                                <option value="10">{{ $t("settings.notification.form.remindertime.options.10m") }}</option>
-                                <option value="15">{{ $t("settings.notification.form.remindertime.options.15m") }}</option>
-                                <option value="30">{{ $t("settings.notification.form.remindertime.options.30m") }}</option>
-                                <option value="60">{{ $t("settings.notification.form.remindertime.options.1hr") }}</option>
-                                <option value="120">{{ $t("settings.notification.form.remindertime.options.2hr") }}</option>
-                                <option value="1440">{{ $t("settings.notification.form.remindertime.options.1d") }}</option>
+                                <option value="5">
+                                    {{ $t("settings.notification.form.remindertime.options.5m") }}
+                                </option>
+                                <option value="10">
+                                    {{ $t("settings.notification.form.remindertime.options.10m") }}
+                                </option>
+                                <option value="15">
+                                    {{ $t("settings.notification.form.remindertime.options.15m") }}
+                                </option>
+                                <option value="30">
+                                    {{ $t("settings.notification.form.remindertime.options.30m") }}
+                                </option>
+                                <option value="60">
+                                    {{ $t("settings.notification.form.remindertime.options.1hr") }}
+                                </option>
+                                <option value="120">
+                                    {{ $t("settings.notification.form.remindertime.options.2hr") }}
+                                </option>
+                                <option value="1440">
+                                    {{ $t("settings.notification.form.remindertime.options.1d") }}
+                                </option>
                             </select>
                         </div>
                     </div>
@@ -489,11 +519,6 @@
                             </label>
                         </div> -->
                     </div>
-                </div>
-
-                <!-- 保存按钮 -->
-                <div class="flex justify-end mb-6">
-                    <button ref="saveButton" class="btn btn-info" @click="saveSettings">{{ $t("settings.savebutton") }}</button>
                 </div>
             </div>
         </div>

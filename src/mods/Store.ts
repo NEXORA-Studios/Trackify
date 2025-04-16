@@ -1,5 +1,7 @@
 import { Store, load } from "@tauri-apps/plugin-store";
-import { type ITaskList, type ISettings, type IFocus, ITaskItem } from "./Interface";
+import type { ITaskList, ISettings, IFocus } from "./Interface";
+import { ITaskItem } from "./Interface";
+import { EventBus } from "./Eventbus";
 
 // 任务存储类
 export class TaskStore {
@@ -74,6 +76,8 @@ export class TaskStore {
             const tasks = await this.getTasks();
             tasks.push(task);
             await this.saveTasks(tasks);
+            // 触发任务更新事件，用于通知模块重置状态
+            EventBus.emit("task-updated", { task });
         } catch (error) {
             console.error("添加任务失败:", error);
         }
@@ -86,6 +90,8 @@ export class TaskStore {
             if (index >= 0 && index < tasks.length) {
                 tasks[index] = task;
                 await this.saveTasks(tasks);
+                // 触发任务更新事件，用于通知模块重置状态
+                EventBus.emit("task-updated", { task, index });
             }
         } catch (error) {
             console.error("更新任务失败:", error);
@@ -97,8 +103,11 @@ export class TaskStore {
         try {
             const tasks = await this.getTasks();
             if (index >= 0 && index < tasks.length) {
+                const deletedTask = tasks[index];
                 tasks.splice(index, 1);
                 await this.saveTasks(tasks);
+                // 触发任务更新事件，用于通知模块重置状态
+                EventBus.emit("task-updated", { deletedTask, index });
             }
         } catch (error) {
             console.error("删除任务失败:", error);

@@ -3,6 +3,7 @@
     import { useI18n } from "vue-i18n";
     import { onBeforeMount, ref, watch } from "vue";
     import { SettingStore } from "./mods/Store";
+    import { NotificationManager } from "./mods/Notification";
 
     const { t, locale } = useI18n();
     const settingStore = SettingStore.getInstance();
@@ -16,6 +17,10 @@
             locale.value = appLocale;
             localStorage.setItem("language", appLocale);
         }
+        
+        // 初始化通知管理器
+        const notificationManager = NotificationManager.getInstance();
+        await notificationManager.init();
     });
 
     // 导航菜单项

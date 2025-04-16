@@ -1,6 +1,6 @@
 [package]
 name = "trackify"
-version = "0.3.2"
+version = "1.0.0"
 description = "Trackify · Easily manage your time"
 authors = ["Jim Lin"]
 edition = "2021"
@@ -23,6 +23,7 @@ tauri-plugin-opener = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 tauri-plugin-store = "2"
+tauri-plugin-notification = "2"
 
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 tauri-plugin-autostart = "2"
